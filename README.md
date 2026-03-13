@@ -1,10 +1,10 @@
 # Azure 101 Lab
 
-This repository holds the customer-facing Azure 101 / Azure Operations lab assets for the Xylem project.
+This repository holds the Azure 101 / Azure Operations lab assets.
 
 ## Scope
 
-The initial lab is a 90-120 minute hands-on Azure Operations lab for customer hosting and cloud engineers.
+The initial lab is a 90-120 minute hands-on Azure Operations lab for cloud engineers.
 
 Primary focus areas:
 - VM troubleshooting
@@ -19,7 +19,7 @@ Primary focus areas:
 - assume a sandbox subscription already exists for the customer
 - each lab user receives their own resource group in that sandbox
 - each lab user builds their own resources during the lab, including VNets, NSGs, VMs, and storage accounts
-- Terraform is deferred to a future v2 version of the lab
+- Bicep is deferred to a future v2 version of the lab
 
 ## Architecture diagram
 
