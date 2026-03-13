@@ -21,6 +21,19 @@ Primary focus areas:
 - each lab user builds their own resources during the lab, including VNets, NSGs, VMs, and storage accounts
 - Terraform is deferred to a future v2 version of the lab
 
+## Architecture diagram
+
+![Azure 101 Lab v1 topology preview](assets/azure-101-lab-topology-preview.svg)
+
+Editable Draw.io source: [assets/azure-101-lab-topology.drawio](assets/azure-101-lab-topology.drawio)
+
+The diagram captures the v1 learner environment:
+- one learner resource group inside a pre-created sandbox subscription
+- one virtual network with separate management and workload subnets
+- a private Ubuntu 22.04 VM in the workload subnet
+- NSG, route table, NAT Gateway, and Standard public IP supporting the workload subnet
+- storage account and Azure Monitor dependencies used during troubleshooting exercises
+
 ## Project structure
 
 - [docs/v1-framework.md](docs/v1-framework.md) - initial lab framework
@@ -39,5 +52,5 @@ Primary focus areas:
 
 1. Refine the exact step-by-step build flow for the student guide
 2. Turn the scenario list into concrete self-guided exercises
-3. Add diagrams and screenshots under assets/
+3. Add exported screenshots or rendered images under assets/ for README-friendly previews
 4. Capture pilot feedback and adjust the v2 backlog
