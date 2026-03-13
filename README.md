@@ -1,6 +1,6 @@
-# Xylem Azure Operations Lab
+# Azure 101 Lab
 
-This repository will hold the customer-facing Azure 101 / Azure Operations lab assets for the Xylem project.
+This repository holds the customer-facing Azure 101 / Azure Operations lab assets for the Xylem project.
 
 ## Scope
 
