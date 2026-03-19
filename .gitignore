@@ -35,3 +35,4 @@ dist/
 build/
 out/
 coverage/
+infra/*.json

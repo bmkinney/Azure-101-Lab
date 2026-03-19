@@ -78,6 +78,8 @@ module vmStop 'modules/vm-stop.bicep' = {
     resourceGroupName: resourceGroup().name
     location: location
     scriptIdentityId: shared.outputs.scriptIdentityId
+    subscriptionId: subscription().subscriptionId
+    armEndpoint: environment().resourceManager
   }
   dependsOn: [userEnvironments]
 }
