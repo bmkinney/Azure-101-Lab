@@ -80,17 +80,8 @@ resource scriptIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-0
   location: location
 }
 
-// Grant the managed identity Contributor on the resource group so it can deallocate VMs
-resource scriptIdentityRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(resourceGroup().id, scriptIdentity.id, 'b24988ac-6180-42a0-ab88-20f7382dd24c')
-  properties: {
-    principalId: scriptIdentity.properties.principalId
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'b24988ac-6180-42a0-ab88-20f7382dd24c') // Contributor
-    principalType: 'ServicePrincipal'
-  }
-}
-
 // --- Outputs ---
 output logAnalyticsWorkspaceId string = logAnalyticsWorkspace.id
 output dataCollectionRuleId string = dataCollectionRule.id
 output scriptIdentityId string = scriptIdentity.id
+output scriptIdentityPrincipalId string = scriptIdentity.properties.principalId

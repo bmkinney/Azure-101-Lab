@@ -17,7 +17,7 @@ VM state, extension troubleshooting, and RBAC discovery
 
 ### Pre-deployed faults
 - VM is in a **deallocated** state
-- Students have **Reader** role on the resource group (insufficient to start the VM)
+- Students have **Reader** role on their resource group (insufficient to start the VM)
 - Custom Script Extension has **failed** (attempts to run a non-existent script)
 
 ### Participant outcome
@@ -27,7 +27,7 @@ The participant identifies the VM is deallocated, attempts to start it, discover
 - VM Overview (power state, provisioning state)
 - Activity Log (deallocate operation)
 - Permission denied error when attempting to start the VM
-- Access Control (IAM) on the resource group (role assignments)
+- Access Control (IAM) on the student's resource group (role assignments)
 - Extensions + applications blade (failed extension status)
 - Boot diagnostics
 

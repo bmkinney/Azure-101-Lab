@@ -5,19 +5,23 @@ Use this checklist after running the Bicep deployment to confirm the lab environ
 ## Pre-deployment
 
 - [ ] subscription is available and accessible
-- [ ] resource group is created
-- [ ] you have Owner or Contributor + User Access Administrator on the resource group
+- [ ] you have Owner or Contributor + User Access Administrator on the subscription
 - [ ] parameters file is updated with student prefixes, location, and admin password
 - [ ] student principal ID is set (if using the RBAC scenario)
 
-## Shared resources
+## Resource groups
+
+- [ ] Shared resource group (`azure101lab-shared-rg`) is created
+- [ ] Per-student resource groups (`azure101lab-<prefix>-rg`) are created
+
+## Shared resources (in `azure101lab-shared-rg`)
 
 - [ ] Log Analytics workspace (`azure101lab-law`) is deployed
 - [ ] Data Collection Rule (`azure101lab-dcr`) is deployed
 - [ ] Managed identity (`azure101lab-script-identity`) is deployed
-- [ ] Managed identity has Contributor role on the resource group
+- [ ] Managed identity has Contributor role on each student resource group
 
-## Per-user resources (repeat for each user prefix)
+## Per-user resources (repeat for each user prefix, in `azure101lab-<prefix>-rg`)
 
 - [ ] VNet created with correct address space
 - [ ] Management and workload subnets created
@@ -36,16 +40,16 @@ Use this checklist after running the Bicep deployment to confirm the lab environ
 
 ## RBAC (if configured)
 
-- [ ] Student principal has Reader role on the resource group
+- [ ] Student principal has Reader role on each student resource group
 - [ ] Proctor is ready to upgrade students to Contributor mid-lab
 
 ## Policy (if configured)
 
-- [ ] Tag audit policies assigned at the resource group scope
+- [ ] Tag audit policies assigned at each student resource group scope
 - [ ] Policy compliance scan has completed (allow up to 30 minutes)
 
 ## Final checks
 
-- [ ] All VMs show as deallocated (`az vm list --resource-group <rg> --show-details --query "[].{name:name,powerState:powerState}" -o table`)
-- [ ] Resource count matches expected number (shared resources + per-user resources × number of students)
+- [ ] All VMs show as deallocated (`az vm list --resource-group azure101lab-<prefix>-rg --show-details --query "[].{name:name,powerState:powerState}" -o table`)
+- [ ] Resource count matches expected number per student resource group
 - [ ] Student prefixes and credentials are documented and ready to hand out

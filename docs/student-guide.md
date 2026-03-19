@@ -28,7 +28,7 @@ By the end of the lab, participants should be able to:
 
 Your proctor will give you:
 - your assigned user prefix (e.g., `userA`)
-- the resource group name (e.g., `azure101lab-rg`)
+- your resource group name (e.g., `azure101lab-userA-rg`)
 - login credentials for your VM
 
 ### Naming convention
@@ -60,7 +60,7 @@ All resources in your environment follow this pattern:
 - this lab does not assign a public IP directly to the VM NIC
 - for guest-level troubleshooting, use portal-native tools such as boot diagnostics, serial console, and Run command
 - the VM is a private resource — direct internet SSH is not part of the design
-- you share a Log Analytics workspace with other participants for KQL exercises
+- you share a Log Analytics workspace (in a separate shared resource group) with other participants for KQL exercises
 
 ## Azure Cloud Shell first-time use
 
@@ -112,7 +112,7 @@ Use these commands to define the names used throughout the rest of the lab. Repl
 
 ```bash
 userPrefix="userA"
-resourceGroupName="azure101lab-rg"
+resourceGroupName="azure101lab-${userPrefix}-rg"
 vnetName="${userPrefix}-vnet"
 nsgName="${userPrefix}-nsg"
 routeTableName="${userPrefix}-rt"

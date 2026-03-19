@@ -29,7 +29,7 @@ Before starting, confirm:
 
 - the lab environment has been pre-deployed by the proctor
 - you have your assigned user prefix (e.g., `userA`)
-- you have the resource group name
+- you have your resource group name (e.g., `azure101lab-userA-rg`)
 - you can access Azure portal and Cloud Shell
 - you have VM credentials (if needed for serial console or Run command)
 
@@ -59,7 +59,7 @@ Use the repository materials in this order:
 
 Use these checkpoints as you progress:
 
-1. portal access confirmed and resource group identified
+1. portal access confirmed and your resource group identified
 2. VM state issue identified (deallocated)
 3. Permission denied when attempting to start VM — Reader role identified
 4. Proctor upgraded access to Contributor
