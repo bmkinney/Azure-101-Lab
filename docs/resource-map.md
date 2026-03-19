@@ -1,58 +1,66 @@
 # Resource Map
 
-## Minimal v1 environment
+## Pre-deployed lab environment
 
-Each participant should end the build phase with:
-- 1 resource group
-- 1 VNet
-- 2 subnets
-- 1 NSG
-- 1 route table
-- 1 NAT gateway
-- 1 Standard public IP for the NAT gateway
-- 1 Ubuntu VM on a small burstable SKU such as `Standard_B1s`
-- 1 storage account
+Each participant has the following resources deployed under their user prefix:
+
+### Per-user resources
+- 1 VNet with 2 subnets (management and workload)
+- 1 NSG (associated to workload subnet)
+- 1 route table (associated to workload subnet)
+- 1 NIC (in workload subnet, no public IP)
+- 1 Ubuntu VM on `Standard_B1s` (deployed with intentional issues)
+- 1 storage account (boot diagnostics)
+
+### Shared resources
+- 1 Log Analytics workspace (shared across all participants for KQL exercises)
+- 1 Data Collection Rule (connects VMs to the workspace)
+
+All resources are deployed in a single resource group.
 
 ## Relationship summary
 
 - the VM uses a NIC
-- the NIC connects the VM to a subnet
-- the subnet exists inside the VNet
-- an NSG can be associated to the subnet or NIC
-- a route table is associated to a subnet
-- a NAT gateway is associated to the workload subnet for outbound internet access
-- the VM NIC should not have a direct public IP
-- the storage account is a separate resource but part of the same operational scope for the lab
+- the NIC connects the VM to the workload subnet
+- the workload subnet exists inside the VNet
+- an NSG is associated to the workload subnet
+- a route table is associated to the workload subnet
+- the VM NIC does not have a direct public IP
+- the storage account is used for boot diagnostics
+- the shared Log Analytics workspace collects telemetry from all participant VMs via Azure Monitor Agent
 
 ## Troubleshooting impact map
 
 ### VM problem
 Check:
-- VM state
+- VM power state (running vs deallocated)
 - provisioning state
 - extension status
 - boot diagnostics
+- Activity Log
 
 ### Connectivity problem
 Check:
 - subnet selection
 - NSG association and rules
+- effective security rules
 - route table association and routes
-- NAT gateway association for outbound design validation
+- effective routes on NIC
 
 ### Permission problem
 Check:
 - role assignment
-- scope
+- scope (resource, resource group, subscription)
 - inherited access
 
 ### Governance problem
 Check:
-- policy error details
-- naming, tags, region, or SKU constraints
+- policy compliance
+- missing tags
+- naming, region, or SKU constraints
 
 ### Cost concern
 Check:
 - unused resources
 - oversized SKUs
-- temporary resources left running
+- resources that cost money even when VM is deallocated (disks, storage)

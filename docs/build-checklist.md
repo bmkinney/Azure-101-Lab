@@ -1,75 +1,51 @@
-# Build Checklist
+# Deployment Verification Checklist
 
-Use this checklist during the build phase of the lab.
+Use this checklist after running the Bicep deployment to confirm the lab environment is ready.
 
-## Before you start
-- confirm the subscription you will use
-- confirm the resource group you will use or create
-- confirm you have the required permissions
-- confirm the naming prefix you will use
+## Pre-deployment
 
-## Resource group
-- resource group exists
-- resource group is in the intended region
-- tags are applied if required by policy
+- [ ] subscription is available and accessible
+- [ ] resource group is created
+- [ ] you have Owner or Contributor + User Access Administrator on the resource group
+- [ ] parameters file is updated with student prefixes, location, and admin password
+- [ ] student principal ID is set (if using the RBAC scenario)
 
-## Virtual network
-- VNet created successfully
-- address space documented
-- address space does not overlap with your planned subnet ranges
+## Shared resources
 
-## Subnets
-- management subnet created
-- workload subnet created
-- subnet ranges are documented
-- no overlap exists between subnets
+- [ ] Log Analytics workspace (`azure101lab-law`) is deployed
+- [ ] Data Collection Rule (`azure101lab-dcr`) is deployed
+- [ ] Managed identity (`azure101lab-script-identity`) is deployed
+- [ ] Managed identity has Contributor role on the resource group
 
-## Network security group
-- NSG created successfully
-- inbound and outbound rules reviewed
-- NSG association is understood and documented
+## Per-user resources (repeat for each user prefix)
 
-## Route table
-- route table created successfully
-- custom routes reviewed
-- subnet association confirmed
+- [ ] VNet created with correct address space
+- [ ] Management and workload subnets created
+- [ ] NSG created and associated to workload subnet
+- [ ] NSG contains `DenyAllInbound` rule at priority 200 (intentional fault)
+- [ ] Route table created and associated to workload subnet
+- [ ] Route table contains `blackhole-default` route with next hop `None` (intentional fault)
+- [ ] NIC created in workload subnet with no public IP
+- [ ] VM created with Ubuntu 22.04 and Standard_B1s
+- [ ] VM is in **deallocated** state (intentional fault)
+- [ ] `FailedCustomScript` extension is present and in failed state (intentional fault)
+- [ ] Azure Monitor Agent extension is installed
+- [ ] Data Collection Rule association exists for the VM
+- [ ] Storage account created for boot diagnostics
+- [ ] Boot diagnostics enabled on the VM
 
-## NAT gateway
-- NAT gateway created successfully
-- Standard public IP created for the NAT gateway
-- NAT gateway is associated to the workload subnet
+## RBAC (if configured)
 
-## Virtual machine
-- VM created successfully
-- VM image is Ubuntu 22.04 or the approved Ubuntu image for the lab
-- VM size is a small burstable SKU such as `Standard_B1s`
-- VM is in the intended subnet
-- VM NIC does not have a direct public IP attached
-- power state is running
-- provisioning state is successful
-- portal-native admin access method is known, such as serial console or Run command
-- boot diagnostics location is known
+- [ ] Student principal has Reader role on the resource group
+- [ ] Proctor is ready to upgrade students to Contributor mid-lab
 
-## Storage account
-- storage account created successfully
-- naming is compliant
-- region and SKU are understood
+## Policy (if configured)
 
-## Monitoring access
-- Activity Log location is known
-- Log Analytics access is confirmed if available
-- at least one KQL query location is known
+- [ ] Tag audit policies assigned at the resource group scope
+- [ ] Policy compliance scan has completed (allow up to 30 minutes)
 
-## RBAC review
-- you know where to view role assignments
-- you know the difference between resource, resource group, and subscription scope
+## Final checks
 
-## Cost and policy review
-- you checked for required tags or naming restrictions
-- you reviewed any deployment warnings or policy errors
-- you identified which resources should be deleted at the end of the lab
-
-## Ready for troubleshooting
-- the baseline environment is deployed
-- you can identify each major resource and its relationship to the others
-- you are ready to move into the scenario modules
+- [ ] All VMs show as deallocated (`az vm list --resource-group <rg> --show-details --query "[].{name:name,powerState:powerState}" -o table`)
+- [ ] Resource count matches expected number (shared resources + per-user resources × number of students)
+- [ ] Student prefixes and credentials are documented and ready to hand out

@@ -2,140 +2,108 @@
 
 ## Scenario design goals
 
-The scenarios should reinforce operational thinking:
+All scenarios are pre-deployed in the lab environment via Bicep. Students do not build infrastructure — they troubleshoot it.
+
+Each scenario reinforces operational thinking:
 - identify the symptom
 - gather evidence
 - isolate the fault domain
 - recommend or perform remediation
 
-## Scenario 1 - Build the baseline environment
+## Scenario 1 — VM Troubleshooting + RBAC Discovery
 
 ### Focus area
-Core Azure resource creation
+VM state, extension troubleshooting, and RBAC discovery
+
+### Pre-deployed faults
+- VM is in a **deallocated** state
+- Students have **Reader** role on the resource group (insufficient to start the VM)
+- Custom Script Extension has **failed** (attempts to run a non-existent script)
 
 ### Participant outcome
-The participant successfully creates:
-- VNet
-- subnets
-- NSG
-- route table
-- NAT gateway
-- a small Ubuntu VM on a burstable SKU
-- storage account
-
-### Why it matters
-Participants need to understand the resource relationships before they can troubleshoot them.
-
-## Scenario 2 - VM access or health issue
-
-### Focus area
-VM troubleshooting
-
-### Example symptoms
-- VM is running but guest-level troubleshooting is still required through portal-native management tools
-- VM deployment succeeded but the workload is not usable
-- provisioning or extension status suggests an issue
+The participant identifies the VM is deallocated, attempts to start it, discovers the Reader role prevents write operations, gets upgraded to Contributor by the proctor, starts the VM, and addresses the failed extension.
 
 ### Evidence sources
-- VM Overview
-- Activity Log
+- VM Overview (power state, provisioning state)
+- Activity Log (deallocate operation)
+- Permission denied error when attempting to start the VM
+- Access Control (IAM) on the resource group (role assignments)
+- Extensions + applications blade (failed extension status)
 - Boot diagnostics
-- extension status
 
-## Scenario 3 - NSG or subnet association issue
+## Scenario 2 — NSG / Subnet Validation
 
 ### Focus area
-Network security validation
+Network security group rule analysis
 
-### Example symptoms
-- expected traffic is blocked
-- rule priority creates an unexpected outcome
-- NSG is associated to the wrong scope
-- outbound design does not follow the expected NAT gateway pattern
+### Pre-deployed fault
+- NSG contains a **DenyAllInbound** rule at **priority 200** that blocks all inbound traffic
+
+### Participant outcome
+The participant identifies the deny rule, understands priority evaluation, and removes or overrides the rule.
 
 ### Evidence sources
-- NSG rules
-- subnet settings
-- NIC settings
-- effective security rules
-- NAT gateway association on the workload subnet
+- NSG inbound rules
+- Effective security rules on the NIC
+- Subnet association confirmation
 
-## Scenario 4 - Route table issue
+## Scenario 3 — Route Table / Routing
 
 ### Focus area
 Routing validation
 
-### Example symptoms
-- traffic path does not behave as expected
-- effective routes show an unexpected destination or next hop
-- connectivity breaks after route changes
+### Pre-deployed fault
+- Route table contains a **blackhole route** (`0.0.0.0/0 → None`) that drops all outbound traffic
+
+### Participant outcome
+The participant identifies the blackhole route using effective routes and removes it.
 
 ### Evidence sources
-- route table configuration
-- subnet association
-- effective routes
+- Effective routes on the NIC
+- Route table configuration
+- Subnet association
 
-## Scenario 5 - Azure Monitor and KQL triage
+## Scenario 4 — Azure Monitor and KQL Triage
 
 ### Focus area
 Operational evidence and log analysis
 
-### Example symptoms
-- recent changes impacted the environment
-- telemetry shows a timing pattern
-- the team needs proof of what changed and when
+### Pre-deployed fault
+- None — this scenario uses monitoring to find evidence of faults from Scenarios 1-3
+
+### Participant outcome
+The participant uses Activity Log and KQL to surface VM stop events, extension failures, and configuration changes.
 
 ### Evidence sources
-- AzureActivity
-- Heartbeat
-- AzureDiagnostics
-- resource-specific logs if enabled
+- AzureActivity table (control plane operations)
+- Heartbeat table (VM availability gaps)
+- AzureDiagnostics (if available)
+- Shared Log Analytics workspace
 
-## Scenario 6 - RBAC scope issue
-
-### Focus area
-Authorization troubleshooting
-
-### Example symptoms
-- participant can view but not modify a resource
-- an action fails at resource scope but works elsewhere
-- expected access was assigned at the wrong scope
-
-### Evidence sources
-- Access Control (IAM)
-- scope hierarchy
-- role assignments
-
-## Scenario 7 - Cost and policy review
+## Scenario 5 — Cost and Policy Validation
 
 ### Focus area
 Governance and operational hygiene
 
-### Example symptoms
-- unnecessary resources remain deployed
-- policy blocks a configuration choice
-- naming, tags, or region selection are constrained
+### Pre-deployed fault
+- Resources are missing required tags (`Department`, `Environment`)
+- Deallocated VMs still incur disk costs
+
+### Participant outcome
+The participant identifies missing tags, recognizes persistent costs even with deallocated VMs, and reviews policy compliance.
 
 ### Evidence sources
-- deployment errors
-- policy compliance views
-- resource inventory
+- Resource Tags blade
+- Policy compliance views (if policy is configured)
+- Resource inventory review
 - SKU and sizing review
 
-## Recommended v1 scenario sequence
+## Recommended scenario sequence
 
-1. Build baseline environment
-2. VM troubleshooting
-3. NSG validation
-4. Route validation
-5. Monitor and KQL triage
-6. RBAC troubleshooting
-7. Cost and policy review
+1. VM Troubleshooting + RBAC Discovery (discover deallocated VM, hit permission denied, identify Reader role, get upgraded to Contributor, start VM, fix extension)
+2. NSG / Subnet Validation (fix the deny rule)
+3. Route Table / Routing (fix the blackhole route)
+4. Azure Monitor and KQL (gather evidence of all previous faults)
+5. Cost and Policy Validation (identify missing tags, cost concerns)
 
-## Notes for v2
-
-Potential future enhancements:
-- prebuilt fault injection
-- Terraform deployment of the lab environment
-- reset automation
-- scenario toggles by participant or cohort
+This sequence is intentional: RBAC surfaces naturally in Scenario 1 when students try to start the VM. Once upgraded to Contributor, students can fix infrastructure and then use monitoring to find evidence.

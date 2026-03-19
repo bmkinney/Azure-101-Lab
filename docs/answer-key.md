@@ -10,12 +10,11 @@ Use [student-guide.md](student-guide.md) as the single learner document.
 
 The expandable solution sections now live directly under:
 
-- Module 1 - build the core environment
-- Module 2 - VM troubleshooting
-- Module 3 - VNet / NSG / routing validation
+- Module 1 - VM troubleshooting + RBAC discovery
+- Module 2 - NSG / Subnet validation
+- Module 3 - Route table / Routing
 - Module 4 - Azure Monitor and KQL triage
-- Module 5 - RBAC troubleshooting
-- Module 6 - Cost and policy validation
+- Module 5 - Cost and policy validation
 
 ## Why
 
