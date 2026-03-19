@@ -28,9 +28,11 @@ override.tf.json
 .env
 .env.*
 *.local
+infra/parameters.bicepparam
 
 # Build and cache artifacts
 dist/
 build/
 out/
 coverage/
+infra/*.json

@@ -1,6 +1,7 @@
 // user-environment.bicep - Per-user lab environment with baked-in faults
 // Deploys: VNet, subnets, NSG (with deny rule), route table (with blackhole),
-//          NIC, VM (with failed extension), storage account, DCR association
+//          NIC, VM, storage account, DCR association
+// Note: FailedCustomScript extension is injected post-deploy via vm-stop.bicep
 
 @description('User prefix for resource naming (e.g., userA, userB).')
 param userPrefix string
@@ -208,25 +209,6 @@ resource vm 'Microsoft.Compute/virtualMachines@2024-07-01' = {
 }
 
 // ============================================================
-// FAILED CUSTOM SCRIPT EXTENSION
-// FAULT: Intentionally runs a non-existent command to produce a failed extension
-// ============================================================
-resource vmExtension 'Microsoft.Compute/virtualMachines/extensions@2024-07-01' = {
-  parent: vm
-  name: 'FailedCustomScript'
-  location: location
-  properties: {
-    publisher: 'Microsoft.Azure.Extensions'
-    type: 'CustomScript'
-    typeHandlerVersion: '2.1'
-    autoUpgradeMinorVersion: true
-    settings: {
-      commandToExecute: '/opt/nonexistent-setup-script.sh'
-    }
-  }
-}
-
-// ============================================================
 // AZURE MONITOR AGENT + DATA COLLECTION RULE ASSOCIATION
 // Connects this VM to the shared Log Analytics workspace
 // ============================================================
@@ -241,7 +223,6 @@ resource amaExtension 'Microsoft.Compute/virtualMachines/extensions@2024-07-01' 
     autoUpgradeMinorVersion: true
     enableAutomaticUpgrade: true
   }
-  dependsOn: [vmExtension]
 }
 
 resource dcrAssociation 'Microsoft.Insights/dataCollectionRuleAssociations@2023-03-11' = {
