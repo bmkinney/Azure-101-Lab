@@ -16,7 +16,7 @@ Primary focus areas:
 ## Delivery model
 
 - the lab environment is deployed by the proctor using Bicep before the session
-- a single deployment creates isolated environments for all students in one resource group
+- a single subscription-scoped deployment creates a shared resource group and a separate resource group per student
 - each student environment contains intentional misconfigurations for troubleshooting
 - students spend their time diagnosing and fixing issues, not building infrastructure
 - assume a sandbox subscription already exists for the customer
@@ -38,16 +38,13 @@ Editable Draw.io source: [assets/azure-101-lab-topology.drawio](assets/azure-101
 ## Quick start (for proctors)
 
 ```bash
-# 1. Create the resource group
-az group create --name azure101lab-rg --location eastus
-
-# 2. Copy and edit the parameters file
+# 1. Copy and edit the parameters file
 cp infra/parameters.example.bicepparam infra/parameters.bicepparam
-# Edit: set userPrefixes, adminPassword, and optionally studentPrincipalId
+# Edit: set userPrefixes, location, adminPassword, and optionally studentPrincipalId
 
-# 3. Deploy
-az deployment group create \
-  --resource-group azure101lab-rg \
+# 2. Deploy (creates resource groups automatically)
+az deployment sub create \
+  --location eastus \
   --template-file infra/main.bicep \
   --parameters infra/parameters.bicepparam
 ```

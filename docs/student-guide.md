@@ -28,7 +28,7 @@ By the end of the lab, participants should be able to:
 
 Your proctor will give you:
 - your assigned user prefix (e.g., `userA`)
-- the resource group name (e.g., `azure101lab-rg`)
+- your resource group name (e.g., `azure101lab-userA-rg`)
 - login credentials for your VM
 
 ### Naming convention
@@ -60,7 +60,7 @@ All resources in your environment follow this pattern:
 - this lab does not assign a public IP directly to the VM NIC
 - for guest-level troubleshooting, use portal-native tools such as boot diagnostics, serial console, and Run command
 - the VM is a private resource — direct internet SSH is not part of the design
-- you share a Log Analytics workspace with other participants for KQL exercises
+- you share a Log Analytics workspace (in a separate shared resource group) with other participants for KQL exercises
 
 ## Azure Cloud Shell first-time use
 
@@ -112,7 +112,7 @@ Use these commands to define the names used throughout the rest of the lab. Repl
 
 ```bash
 userPrefix="userA"
-resourceGroupName="azure101lab-rg"
+resourceGroupName="azure101lab-${userPrefix}-rg"
 vnetName="${userPrefix}-vnet"
 nsgName="${userPrefix}-nsg"
 routeTableName="${userPrefix}-rt"
@@ -625,47 +625,55 @@ The team wants to know whether this environment is compliant and cost-aware.
 
 ### Objective
 
-Review the environment for obvious cost waste and policy constraints.
+Audit the environment for governance compliance, review cost information at the subscription and resource group level, and identify resources that generate cost even when not actively in use.
 
 ### Tasks
 
-- inspect resources for missing tags
-- review SKUs and sizing decisions
-- check whether policy flags any non-compliant resources
-- identify what costs money even when the VM is deallocated
-- document what should be cleaned up or changed
+- your organization requires that all resources have a `Department` tag and an `Environment` tag — verify whether each resource in your resource group has these tags applied
+- in production environments, Azure Policy is commonly used to audit and remediate missing tags automatically — check whether any policy assignments flag non-compliant resources
+- navigate to the **Subscriptions** blade in the Azure portal, open your lab subscription, and review the overview page to see the subscription-level cost summary and resource counts
+- open your resource group and navigate to **Cost analysis** (under Cost Management in the left menu) to view accumulated costs at the resource group level
+- group costs by resource type or resource name to identify which resources are generating cost
+- identify what costs money even when the VM is deallocated (think about disks, storage accounts, and shared services)
+- navigate to **Budgets** (under Cost Management) to check whether any budgets have been assigned to the subscription or resource group, and understand how budgets can be used to set spending thresholds and alerts
+- review SKUs and sizing decisions and document what should be cleaned up or changed
+
+> **Note:** This lab environment was recently deployed, so costs may appear minimal or show as $0.00. The goal of this module is to learn *where* to monitor costs and manage budgets, not to analyze exact dollar amounts.
 
 ### Validation checks
 
-- identify one cost concern and one governance concern
-- explain what change you would make to improve both
+- identify at least one governance concern (missing tags)
+- identify at least one cost concern (resources that incur cost even when the VM is deallocated)
+- identify where to view subscription-level cost information
+- identify where to view resource group-level cost breakdowns and budgets
 
 ### Hints
 
-- Hint 1: Check the Tags blade on your resources.
+- Hint 1: Check the **Tags** blade on your resources. Look specifically for `Department` and `Environment` tags.
 - Hint 2: A deallocated VM does not mean free — what else costs money?
-- Hint 3: Check Policy compliance views if available.
-- Hint 4: Cost awareness in this lab is about good habits, not exact budgeting.
+- Hint 3: Check **Policy → Compliance** views if available.
+- Hint 4: Open the **Subscriptions** blade to find the subscription-level cost summary.
+- Hint 5: Open your resource group → **Cost analysis** to see resource-level cost breakdowns. Try grouping by resource type.
+- Hint 6: Check **Cost Management → Budgets** to see if any spending thresholds have been configured.
 
 <details>
 <summary>Show Module 5 solution and validation</summary>
 
 ### What's wrong
 
-1. **Resources have no tags.** All resources are missing `Department` and `Environment` tags that organizational policy may require.
+1. **Resources have no tags.** All resources are missing the required `Department` and `Environment` tags. In production, Azure Policy with audit or remediate effects is the standard way to enforce tag compliance at scale.
 2. **Cost items persist even with a deallocated VM.** The managed OS disk and storage account incur costs whether the VM is running or not.
 
 ### Solution steps
 
-1. Open any resource in your prefix → Tags → Notice no tags are applied.
-2. Review the full resource list in the resource group.
-3. Identify cost-bearing items:
-   - VM managed OS disk (billed even when VM is deallocated)
-   - Storage account (billed even if empty)
-   - Log Analytics workspace ingestion (shared cost)
-4. If Azure Policy is configured, open Policy → Compliance.
-5. Look for non-compliant resources flagged for missing tags.
-6. Apply tags where required:
+#### Tag audit
+
+1. Open any resource in your prefix → **Tags** → Notice no tags are applied.
+2. Check multiple resources in your resource group — none have `Department` or `Environment` tags.
+3. If Azure Policy is configured, open **Policy → Compliance** and look for non-compliant resources flagged for missing tags.
+4. In production, tags would typically be enforced through Azure Policy with an **Audit** effect (flag non-compliance) or a **Modify/DeployIfNotExists** effect (automatically remediate missing tags).
+
+Optionally, you can apply tags manually using the CLI:
 
 ```bash
 # Apply tags to a resource (replace <sub-id> with your subscription ID)
@@ -675,27 +683,58 @@ az tag update \
   --tags Department=Lab Environment=Training
 ```
 
-7. Document what resources could be cleaned up after the lab.
+#### Subscription cost overview
+
+5. In the Azure portal, search for **Subscriptions** in the top search bar or select it from the left navigation.
+6. Select the lab subscription.
+7. The subscription overview page displays a cost summary, including the current billing period spend and resource counts. Since the lab was recently deployed, the amounts may be minimal.
+
+#### Resource group cost analysis
+
+8. Navigate to your resource group in the Azure portal.
+9. In the left menu, select **Cost analysis** (under Cost Management).
+10. The default view shows accumulated costs over time. Use the **Group by** dropdown to group by **Resource type** or **Resource** to see which services drive cost.
+11. Identify cost-bearing items even when the VM is deallocated:
+    - **Managed OS disk** — billed as long as the disk exists, regardless of VM state
+    - **Storage account** — billed even if empty (capacity, transactions, and redundancy charges)
+    - **Log Analytics workspace** — shared ingestion cost
+12. Try switching between the **Accumulated cost** and **Daily cost** views to see how charges accrue.
+
+#### Budgets
+
+13. In the left menu under Cost Management, select **Budgets**.
+14. Review any existing budgets assigned to the subscription or resource group. If none exist, note this as a governance gap.
+15. Understand that budgets allow you to set monthly or quarterly spending thresholds and configure alerts (e.g., email notifications at 80% and 100% of budget).
+
+16. Document what resources could be cleaned up or downsized after the lab.
 
 ### Expected outcomes
 
-- you identify missing tags as a governance concern
+- you identify missing `Department` and `Environment` tags as a governance concern
+- you understand that Azure Policy is used to audit and remediate tag compliance at scale
+- you know how to view subscription-level cost information from the Subscriptions blade
+- you know how to use Cost Management → Cost analysis to view resource group cost breakdowns
 - you understand that deallocated VMs still have cost (disk, storage)
-- you know how Azure Policy can audit or enforce tag compliance
+- you know where to find and manage budgets for spending thresholds and alerts
 - you can identify cleanup candidates
 
 ### Module completion check
 
 You are done with Module 5 when:
 
-- you identified at least one cost concern
-- you identified at least one governance concern
+- you identified the missing `Department` and `Environment` tags as a governance concern
+- you reviewed the subscription overview for cost summary information
+- you used Cost Management → Cost analysis to view costs at the resource group level
+- you identified at least one cost concern (resources billed even when the VM is deallocated)
+- you checked the Budgets section and understand how budgets manage spending thresholds
 - you documented cleanup recommendations
 
 ### Microsoft Learn references
 
 - Azure Policy overview: https://learn.microsoft.com/azure/governance/policy/overview
 - Microsoft Cost Management: https://learn.microsoft.com/azure/cost-management-billing/
+- Quickstart — Explore and analyze costs with cost analysis: https://learn.microsoft.com/azure/cost-management-billing/costs/quick-acm-cost-analysis
+- Tutorial — Create and manage Azure budgets: https://learn.microsoft.com/azure/cost-management-billing/costs/tutorial-acm-create-budgets
 
 </details>
 

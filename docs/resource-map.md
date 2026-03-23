@@ -2,9 +2,12 @@
 
 ## Pre-deployed lab environment
 
-Each participant has the following resources deployed under their user prefix:
+The lab uses a multi-resource-group architecture:
 
-### Per-user resources
+- **Shared resource group** (`azure101lab-shared-rg`): contains resources shared across all participants
+- **Per-student resource groups** (`azure101lab-<prefix>-rg`): each student gets their own isolated resource group
+
+### Per-user resources (in `azure101lab-<prefix>-rg`)
 - 1 VNet with 2 subnets (management and workload)
 - 1 NSG (associated to workload subnet)
 - 1 route table (associated to workload subnet)
@@ -12,11 +15,10 @@ Each participant has the following resources deployed under their user prefix:
 - 1 Ubuntu VM on `Standard_B1s` (deployed with intentional issues)
 - 1 storage account (boot diagnostics)
 
-### Shared resources
+### Shared resources (in `azure101lab-shared-rg`)
 - 1 Log Analytics workspace (shared across all participants for KQL exercises)
 - 1 Data Collection Rule (connects VMs to the workspace)
-
-All resources are deployed in a single resource group.
+- 1 User-assigned managed identity (used by deployment script)
 
 ## Relationship summary
 

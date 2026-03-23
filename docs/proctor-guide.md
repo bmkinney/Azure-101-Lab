@@ -4,14 +4,14 @@
 
 This guide is for the lab proctor delivering the Azure 101 Operations Lab. The lab environment is pre-deployed using Bicep so students spend their time troubleshooting, not building infrastructure.
 
-A single Bicep deployment creates isolated environments for all students in one resource group. Each environment contains intentional misconfigurations that map to the lab's troubleshooting scenarios.
+A single Bicep deployment creates a shared resource group for common infrastructure and a separate resource group per student for their isolated lab environment. Each student environment contains intentional misconfigurations that map to the lab's troubleshooting scenarios.
 
 ## Prerequisites
 
 Before deploying the lab environment, confirm:
 
 - an Azure subscription is available for the lab
-- you have `Owner` or `Contributor` + `User Access Administrator` on the target resource group
+- you have `Owner` or `Contributor` + `User Access Administrator` on the target subscription
 - Azure CLI is installed and authenticated (`az login`)
 - Bicep CLI is available (`az bicep version` — bundled with Azure CLI 2.20+)
 - you know how many students will participate and their assigned prefixes
@@ -32,51 +32,53 @@ Add or remove entries in the Bicep parameters file as needed.
 
 ## Deployment instructions
 
-### Step 1 — Create the resource group
-
-```bash
-az group create \
-  --name azure101lab-rg \
-  --location eastus
-```
-
-### Step 2 — Copy and edit the parameters file
+### Step 1 — Copy and edit the parameters file
 
 ```bash
 cp infra/parameters.example.bicepparam infra/parameters.bicepparam
 ```
 
 Edit `infra/parameters.bicepparam`:
+- update `labName` if you want a custom prefix (default: `azure101lab`)
 - update `userPrefixes` to match your student list
 - update `location` to your approved region
 - set `adminPassword` to a strong shared password (minimum 12 characters, must include uppercase, lowercase, number, and special character)
 - optionally set `studentPrincipalId` to a Microsoft Entra group object ID containing all students (for the RBAC scenario)
 
-### Step 3 — Deploy
+### Step 2 — Deploy
 
 ```bash
-az deployment group create \
-  --resource-group azure101lab-rg \
+az deployment sub create \
+  --location eastus \
   --template-file infra/main.bicep \
   --parameters infra/parameters.bicepparam
 ```
 
+The deployment automatically creates all resource groups:
+- `<labName>-shared-rg` — shared resources (Log Analytics, managed identity)
+- `<labName>-<prefix>-rg` — per-student resources (one RG per student)
+
 Deployment takes approximately 10-15 minutes depending on region and VM availability.
 
-### Step 4 — Verify deployment
+### Step 3 — Verify deployment
 
 After deployment completes, verify:
 
 ```bash
-# List all resources in the resource group
+# List all lab resource groups
+az group list \
+  --query "[?starts_with(name, 'azure101lab')].{name:name, location:location}" \
+  --output table
+
+# List shared resources
 az resource list \
-  --resource-group azure101lab-rg \
+  --resource-group azure101lab-shared-rg \
   --query "[].{name:name, type:type}" \
   --output table
 
-# Confirm VMs are deallocated (this is intentional)
+# Confirm VMs are deallocated in each student RG (this is intentional)
 az vm list \
-  --resource-group azure101lab-rg \
+  --resource-group azure101lab-userA-rg \
   --show-details \
   --query "[].{name:name, powerState:powerState}" \
   --output table
@@ -84,21 +86,66 @@ az vm list \
 
 Expected output: All VMs should show `VM deallocated`.
 
+### Step 4 — Assign subscription Reader to students
+
+Students need **Reader** at the subscription scope to complete Module 5. This allows them to view the subscription overview (cost summary and resource counts), access Cost Management cost analysis at subscription scope, view budgets, and see Azure Policy compliance. This is separate from the resource group-scoped Reader that Bicep assigns, which is part of the RBAC fault in Module 1.
+
+The resource group-scoped **Contributor** role (assigned during the Module 1 RBAC upgrade) handles tag operations and resource group-level cost analysis.
+
+#### Option A — Assign via CLI
+
+```bash
+# Assign Reader on the subscription to the student group (or individual users)
+az role assignment create \
+  --assignee <student-principal-id> \
+  --role "Reader" \
+  --scope "/subscriptions/<sub-id>"
+```
+
+#### Option B — Assign via portal
+
+1. Open the lab subscription in the Azure portal
+2. Go to **Access control (IAM)**
+3. Click **Add** → **Add role assignment**
+4. Select **Reader**
+5. Select the student group or individual users
+6. Click **Review + assign**
+
+#### Why this is needed
+
+| Module 5 Task | Required Permission | Provided By |
+|---|---|---|
+| View subscription overview | `Microsoft.Resources/subscriptions/read` | Reader on subscription |
+| Cost Management (subscription scope) | `Microsoft.CostManagement/*/read` | Reader on subscription |
+| View budgets | `Microsoft.Consumption/budgets/read` | Reader on subscription |
+| View policy compliance | `Microsoft.Authorization/policyAssignments/read` | Reader on subscription |
+| Cost Management (RG scope) | `Microsoft.CostManagement/*/read` | Contributor on RG |
+| View and apply tags | `Microsoft.Resources/tags/*` | Contributor on RG |
+
 ---
 
 ## What gets deployed
 
-### Shared resources
+### Resource group structure
+
+| Resource Group | Contents |
+|---|---|
+| `azure101lab-shared-rg` | Log Analytics workspace, Data Collection Rule, managed identity, deployment script |
+| `azure101lab-userA-rg` | All per-user resources for userA |
+| `azure101lab-userB-rg` | All per-user resources for userB |
+| (one RG per student prefix) | ... |
+
+### Shared resources (in `azure101lab-shared-rg`)
 
 | Resource | Name | Purpose |
 |---|---|---|
 | Log Analytics workspace | `azure101lab-law` | Shared workspace for KQL and monitoring exercises |
 | Data Collection Rule | `azure101lab-dcr` | Routes VM telemetry to the workspace |
-| User-assigned managed identity | `azure101lab-script-identity` | Runs the VM deallocate deployment script |
+| User-assigned managed identity | `azure101lab-script-identity` | Runs the fault injection deployment script |
 
-### Per-user resources
+### Per-user resources (in `azure101lab-<prefix>-rg`)
 
-For each user prefix (e.g., `userA`):
+For each user prefix (e.g., `userA` in `azure101lab-userA-rg`):
 
 | Resource | Name pattern | Purpose |
 |---|---|---|
@@ -172,10 +219,10 @@ The Bicep deployment includes intentional misconfigurations. **Do not fix these 
 | Detail | Value |
 |---|---|
 | **Scenario** | VM Troubleshooting — RBAC Discovery (Module 1) |
-| **What's wrong** | Students have `Reader` role on the resource group, which is insufficient to start VMs, modify NSGs, or delete routes |
+| **What's wrong** | Students have `Reader` role on their resource group, which is insufficient to start VMs, modify NSGs, or delete routes |
 | **How it was created** | Optional RBAC assignment in Bicep (requires `studentPrincipalId` parameter) |
 | **What students see** | "You do not have permission" or "Authorization failed" when attempting to start the VM in Module 1 |
-| **Expected discovery path** | Attempt to start VM → Get permission denied → Open Access Control (IAM) on resource group → Review role assignments → See Reader role → Understand Reader allows view but not modify |
+| **Expected discovery path** | Attempt to start VM → Get permission denied → Open Access Control (IAM) on their resource group → Review role assignments → See Reader role → Understand Reader allows view but not modify |
 | **Resolution** | Proctor upgrades the student to Contributor role (see "Mid-lab RBAC upgrade" below) |
 | **Discussion points** | Reader vs Contributor vs Owner. Scope hierarchy (resource, resource group, subscription). Least-privilege principle. Inherited vs direct role assignments. |
 
@@ -195,21 +242,22 @@ The Bicep deployment includes intentional misconfigurations. **Do not fix these 
 
 ## Mid-lab RBAC upgrade
 
-If you configured the RBAC scenario (set `studentPrincipalId` in parameters), students will initially have only `Reader` access. After they complete the RBAC troubleshooting module and identify the problem, upgrade their access:
+If you configured the RBAC scenario (set `studentPrincipalId` in parameters), students will initially have only `Reader` access on their own resource group. After they complete the RBAC troubleshooting module and identify the problem, upgrade their access:
 
 ### Option A — Upgrade via CLI
 
 ```bash
 # Replace <student-principal-id> with the Entra group or user object ID
+# Repeat for each student resource group, or assign at subscription scope
 az role assignment create \
   --assignee <student-principal-id> \
   --role "Contributor" \
-  --scope "/subscriptions/<sub-id>/resourceGroups/azure101lab-rg"
+  --scope "/subscriptions/<sub-id>/resourceGroups/azure101lab-userA-rg"
 ```
 
 ### Option B — Upgrade via portal
 
-1. Open the resource group in the Azure portal
+1. Open the student's resource group in the Azure portal
 2. Go to **Access control (IAM)**
 3. Click **Add** → **Add role assignment**
 4. Select **Contributor**
@@ -234,7 +282,7 @@ az policy assignment create \
   --name "audit-department-tag" \
   --display-name "Audit missing Department tag" \
   --policy "/providers/Microsoft.Authorization/policyDefinitions/871b6d14-10aa-478d-b466-ef6698cc4571" \
-  --scope "/subscriptions/<sub-id>/resourceGroups/azure101lab-rg" \
+  --scope "/subscriptions/<sub-id>/resourceGroups/azure101lab-userA-rg" \
   --params '{"tagName": {"value": "Department"}}'
 
 # Audit resources missing the "Environment" tag
@@ -242,7 +290,7 @@ az policy assignment create \
   --name "audit-environment-tag" \
   --display-name "Audit missing Environment tag" \
   --policy "/providers/Microsoft.Authorization/policyDefinitions/871b6d14-10aa-478d-b466-ef6698cc4571" \
-  --scope "/subscriptions/<sub-id>/resourceGroups/azure101lab-rg" \
+  --scope "/subscriptions/<sub-id>/resourceGroups/azure101lab-userA-rg" \
   --params '{"tagName": {"value": "Environment"}}'
 ```
 
@@ -414,30 +462,44 @@ Heartbeat
 
 **Business symptom to present:** "Before we hand this environment off, review it for compliance and cost concerns."
 
+**Prerequisites:** Students must have subscription-level Reader (assigned in Step 4 of Deployment instructions) and Contributor on their resource group (assigned during Module 1 RBAC upgrade).
+
 **What students should find:**
-- Resources have no tags (Fault 6)
+- Resources are missing the required `Department` and `Environment` tags (Fault 6)
 - Deallocated VMs still have managed disks incurring cost
 - Storage accounts incur cost even if empty
+- Subscription overview shows cost summary and resource counts
+- Cost Management → Cost analysis shows resource-level cost breakdowns
 - If Azure Policy is configured: compliance dashboard shows non-compliant resources
 
 **Expected student investigation:**
-1. Open any resource → Tags → See no tags
-2. Review the resource list — identify cost-bearing items
-3. Note: deallocated VM = no compute charge, but disk still costs money
-4. Note: storage account exists and costs money even if unused
-5. If policy is configured: open Policy → Compliance → See non-compliant resources
-6. Document what tags should be applied and what resources could be cleaned up
+1. Open any resource → Tags → Verify that `Department` and `Environment` tags are missing
+2. Check Policy → Compliance if policy assignments are configured → See non-compliant resources
+3. Open the **Subscriptions** blade → Select the lab subscription → Review the overview page for cost summary
+4. Open the resource group → **Cost analysis** (under Cost Management) → Group by resource type to identify cost-bearing items
+5. Note: deallocated VM = no compute charge, but managed disk still costs money
+6. Note: storage account exists and costs money even if unused
+7. Navigate to **Budgets** under Cost Management → Check for existing budgets or note the absence as a governance gap
+8. Document what tags should be applied and what resources could be cleaned up
+9. Note: costs may appear minimal since the lab was recently deployed — the focus is on learning where to find this information
 
 **Key teaching moments:**
 - Tags are metadata for billing, ownership, and environment tracking
+- In production, Azure Policy with Audit or Modify effects enforces tag compliance at scale
 - Deallocated ≠ free — disks, IPs, and storage still cost
 - Azure Policy can audit or enforce governance standards
+- Cost Management provides actual cost breakdowns at both subscription and resource group scope
+- The subscription overview gives a quick cost snapshot across all resource groups
+- Grouping by resource type helps identify which services drive cost
+- Budgets enable proactive spend management with alerting thresholds (e.g., email at 80% and 100% of budget)
 - Cost hygiene: regularly review what's running and what's needed
 
 **Wrap-up questions:**
 - What costs remain when a VM is deallocated?
 - How would you enforce that all resources must have a Department tag?
 - What's the difference between Audit and Deny policy effects?
+- Where would you go to set up a spending alert for your resource group?
+- What's the difference between viewing costs at the subscription level vs. the resource group level?
 
 ---
 
@@ -472,26 +534,37 @@ Heartbeat
 
 After the lab is complete:
 
-### Delete the resource group (removes everything)
+### Delete all lab resource groups
 
 ```bash
-az group delete --name azure101lab-rg --yes --no-wait
+# Delete shared resources
+az group delete --name azure101lab-shared-rg --yes --no-wait
+
+# Delete each student resource group
+az group delete --name azure101lab-userA-rg --yes --no-wait
+az group delete --name azure101lab-userB-rg --yes --no-wait
+az group delete --name azure101lab-userC-rg --yes --no-wait
+# Repeat for each student prefix
 ```
 
 ### Remove policy assignments (if configured)
 
 ```bash
 az policy assignment delete --name "audit-department-tag" \
-  --scope "/subscriptions/<sub-id>/resourceGroups/azure101lab-rg"
+  --scope "/subscriptions/<sub-id>/resourceGroups/azure101lab-userA-rg"
 
 az policy assignment delete --name "audit-environment-tag" \
-  --scope "/subscriptions/<sub-id>/resourceGroups/azure101lab-rg"
+  --scope "/subscriptions/<sub-id>/resourceGroups/azure101lab-userA-rg"
+# Repeat for each student resource group
 ```
 
 ### Confirm cleanup
 
 ```bash
-az group show --name azure101lab-rg 2>/dev/null && echo "Still exists" || echo "Deleted"
+az group list \
+  --query "[?starts_with(name, 'azure101lab')].name" \
+  --output tsv
+# Should return empty
 ```
 
 ---
@@ -508,7 +581,7 @@ If the region does not have `Standard_B1s` capacity, either:
 
 The deployment script uses a user-assigned managed identity. If it fails:
 1. Check the deployment script logs in the portal (resource type: `Microsoft.Resources/deploymentScripts`)
-2. Verify the managed identity has Contributor on the resource group
+2. Verify the managed identity has Contributor on each student resource group
 3. The identity role assignment and the deployment script are in the same deployment — if the identity was just created, the role may take a few minutes to propagate. Re-run the deployment.
 
 ### Storage account name conflict
