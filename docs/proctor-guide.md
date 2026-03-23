@@ -86,6 +86,42 @@ az vm list \
 
 Expected output: All VMs should show `VM deallocated`.
 
+### Step 4 — Assign subscription Reader to students
+
+Students need **Reader** at the subscription scope to complete Module 5. This allows them to view the subscription overview (cost summary and resource counts), access Cost Management cost analysis at subscription scope, view budgets, and see Azure Policy compliance. This is separate from the resource group-scoped Reader that Bicep assigns, which is part of the RBAC fault in Module 1.
+
+The resource group-scoped **Contributor** role (assigned during the Module 1 RBAC upgrade) handles tag operations and resource group-level cost analysis.
+
+#### Option A — Assign via CLI
+
+```bash
+# Assign Reader on the subscription to the student group (or individual users)
+az role assignment create \
+  --assignee <student-principal-id> \
+  --role "Reader" \
+  --scope "/subscriptions/<sub-id>"
+```
+
+#### Option B — Assign via portal
+
+1. Open the lab subscription in the Azure portal
+2. Go to **Access control (IAM)**
+3. Click **Add** → **Add role assignment**
+4. Select **Reader**
+5. Select the student group or individual users
+6. Click **Review + assign**
+
+#### Why this is needed
+
+| Module 5 Task | Required Permission | Provided By |
+|---|---|---|
+| View subscription overview | `Microsoft.Resources/subscriptions/read` | Reader on subscription |
+| Cost Management (subscription scope) | `Microsoft.CostManagement/*/read` | Reader on subscription |
+| View budgets | `Microsoft.Consumption/budgets/read` | Reader on subscription |
+| View policy compliance | `Microsoft.Authorization/policyAssignments/read` | Reader on subscription |
+| Cost Management (RG scope) | `Microsoft.CostManagement/*/read` | Contributor on RG |
+| View and apply tags | `Microsoft.Resources/tags/*` | Contributor on RG |
+
 ---
 
 ## What gets deployed
@@ -426,30 +462,44 @@ Heartbeat
 
 **Business symptom to present:** "Before we hand this environment off, review it for compliance and cost concerns."
 
+**Prerequisites:** Students must have subscription-level Reader (assigned in Step 4 of Deployment instructions) and Contributor on their resource group (assigned during Module 1 RBAC upgrade).
+
 **What students should find:**
-- Resources have no tags (Fault 6)
+- Resources are missing the required `Department` and `Environment` tags (Fault 6)
 - Deallocated VMs still have managed disks incurring cost
 - Storage accounts incur cost even if empty
+- Subscription overview shows cost summary and resource counts
+- Cost Management → Cost analysis shows resource-level cost breakdowns
 - If Azure Policy is configured: compliance dashboard shows non-compliant resources
 
 **Expected student investigation:**
-1. Open any resource → Tags → See no tags
-2. Review the resource list — identify cost-bearing items
-3. Note: deallocated VM = no compute charge, but disk still costs money
-4. Note: storage account exists and costs money even if unused
-5. If policy is configured: open Policy → Compliance → See non-compliant resources
-6. Document what tags should be applied and what resources could be cleaned up
+1. Open any resource → Tags → Verify that `Department` and `Environment` tags are missing
+2. Check Policy → Compliance if policy assignments are configured → See non-compliant resources
+3. Open the **Subscriptions** blade → Select the lab subscription → Review the overview page for cost summary
+4. Open the resource group → **Cost analysis** (under Cost Management) → Group by resource type to identify cost-bearing items
+5. Note: deallocated VM = no compute charge, but managed disk still costs money
+6. Note: storage account exists and costs money even if unused
+7. Navigate to **Budgets** under Cost Management → Check for existing budgets or note the absence as a governance gap
+8. Document what tags should be applied and what resources could be cleaned up
+9. Note: costs may appear minimal since the lab was recently deployed — the focus is on learning where to find this information
 
 **Key teaching moments:**
 - Tags are metadata for billing, ownership, and environment tracking
+- In production, Azure Policy with Audit or Modify effects enforces tag compliance at scale
 - Deallocated ≠ free — disks, IPs, and storage still cost
 - Azure Policy can audit or enforce governance standards
+- Cost Management provides actual cost breakdowns at both subscription and resource group scope
+- The subscription overview gives a quick cost snapshot across all resource groups
+- Grouping by resource type helps identify which services drive cost
+- Budgets enable proactive spend management with alerting thresholds (e.g., email at 80% and 100% of budget)
 - Cost hygiene: regularly review what's running and what's needed
 
 **Wrap-up questions:**
 - What costs remain when a VM is deallocated?
 - How would you enforce that all resources must have a Department tag?
 - What's the difference between Audit and Deny policy effects?
+- Where would you go to set up a spending alert for your resource group?
+- What's the difference between viewing costs at the subscription level vs. the resource group level?
 
 ---
 

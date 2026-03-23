@@ -90,11 +90,14 @@ Governance and operational hygiene
 - Deallocated VMs still incur disk costs
 
 ### Participant outcome
-The participant identifies missing tags, recognizes persistent costs even with deallocated VMs, and reviews policy compliance.
+The participant identifies missing `Department` and `Environment` tags, reviews subscription-level and resource group-level cost information using Cost Management, recognizes persistent costs even with deallocated VMs, checks budgets, and reviews policy compliance.
 
 ### Evidence sources
-- Resource Tags blade
+- Resource Tags blade (`Department` and `Environment` tags missing)
 - Policy compliance views (if policy is configured)
+- Subscription overview (cost summary and resource counts)
+- Cost Management → Cost analysis (resource group scope, grouped by resource type)
+- Cost Management → Budgets (spending thresholds and alerts)
 - Resource inventory review
 - SKU and sizing review
 
