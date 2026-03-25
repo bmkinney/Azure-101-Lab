@@ -1,5 +1,6 @@
 // shared.bicep - Shared resources for the Azure 101 Lab
-// Deploys: Log Analytics workspace, user-assigned managed identity for deployment scripts
+// Deploys: Log Analytics workspace, Data Collection Rule (platform VM metrics + syslog),
+//          user-assigned managed identity for deployment scripts
 
 @description('Azure region for all shared resources.')
 param location string
@@ -20,6 +21,8 @@ resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2023-09
 }
 
 // --- Data Collection Rule for Azure Monitor Agent ---
+// Captures platform VM metrics (CPU, memory, disk, network) and syslog
+// Used by Modules 1, 3, 4 for performance trending and KQL exercises
 resource dataCollectionRule 'Microsoft.Insights/dataCollectionRules@2023-03-11' = {
   name: '${labName}-dcr'
   location: location
@@ -31,7 +34,14 @@ resource dataCollectionRule 'Microsoft.Insights/dataCollectionRules@2023-03-11' 
           samplingFrequencyInSeconds: 60
           counterSpecifiers: [
             '\\Processor Information(_Total)\\% Processor Time'
+            '\\Processor Information(_Total)\\% User Time'
             '\\Memory\\Available Bytes'
+            '\\Memory\\% Used Memory'
+            '\\LogicalDisk(*)\\% Used Space'
+            '\\LogicalDisk(*)\\Free Megabytes'
+            '\\LogicalDisk(*)\\Disk Reads/sec'
+            '\\LogicalDisk(*)\\Disk Writes/sec'
+            '\\Network Interface(*)\\Bytes Total/sec'
           ]
           name: 'perfCounterDataSource'
         }
@@ -42,6 +52,7 @@ resource dataCollectionRule 'Microsoft.Insights/dataCollectionRules@2023-03-11' 
           facilityNames: [
             'auth'
             'authpriv'
+            'cron'
             'daemon'
             'kern'
             'syslog'
@@ -52,6 +63,8 @@ resource dataCollectionRule 'Microsoft.Insights/dataCollectionRules@2023-03-11' 
             'Emergency'
             'Error'
             'Warning'
+            'Notice'
+            'Info'
           ]
           name: 'syslogDataSource'
         }

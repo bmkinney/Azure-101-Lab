@@ -4,598 +4,336 @@
 
 This guide is for the lab proctor delivering the Azure 101 Operations Lab. The lab environment is pre-deployed using Bicep so students spend their time troubleshooting, not building infrastructure.
 
-A single Bicep deployment creates a shared resource group for common infrastructure and a separate resource group per student for their isolated lab environment. Each student environment contains intentional misconfigurations that map to the lab's troubleshooting scenarios.
+Each group of 3 students shares one Azure subscription and one resource group with a single set of resources. Students collaborate in a breakout room. The proctor deploys the Bicep template once per group subscription.
+
+Students have **Contributor** role from the start — there is no mid-lab RBAC upgrade. The RBAC challenge (Module 6) focuses on data-plane vs control-plane permissions.
 
 ## Prerequisites
 
 Before deploying the lab environment, confirm:
 
-- an Azure subscription is available for the lab
-- you have `Owner` or `Contributor` + `User Access Administrator` on the target subscription
+- one Azure subscription per student group (3 students per subscription)
+- you have `Owner` or `Contributor` + `User Access Administrator` on each subscription
 - Azure CLI is installed and authenticated (`az login`)
 - Bicep CLI is available (`az bicep version` — bundled with Azure CLI 2.20+)
-- you know how many students will participate and their assigned prefixes
+- you know the group assignments
+- Network Watcher is registered in each subscription's target region
 
-## Student prefixes
+## Student groups
 
-Each student is assigned a unique prefix used for all their resources. Common convention:
+| Group | Subscription | Students |
+|---|---|---|
+| Group 1 | Lab-Sub-01 | Alice, Bob, Carol |
+| Group 2 | Lab-Sub-02 | Dave, Eve, Frank |
+| Group 3 | Lab-Sub-03 | Grace, Hank, Ivy |
 
-| Student | Prefix |
-|---|---|
-| Student 1 | `userA` |
-| Student 2 | `userB` |
-| Student 3 | `userC` |
-| Student 4 | `userD` |
-| Student 5 | `userE` |
-
-Add or remove entries in the Bicep parameters file as needed.
+Adjust naming as needed. Each group gets its own `parameters.bicepparam` file.
 
 ## Deployment instructions
 
-### Step 1 — Copy and edit the parameters file
+### Step 1 — Create a parameters file for each group
 
 ```bash
-cp infra/parameters.example.bicepparam infra/parameters.bicepparam
+cp infra/parameters.example.bicepparam infra/parameters-group1.bicepparam
 ```
 
-Edit `infra/parameters.bicepparam`:
-- update `labName` if you want a custom prefix (default: `azure101lab`)
-- update `userPrefixes` to match your student list
+Edit `infra/parameters-group1.bicepparam`:
 - update `location` to your approved region
-- set `adminPassword` to a strong shared password (minimum 12 characters, must include uppercase, lowercase, number, and special character)
-- optionally set `studentPrincipalId` to a Microsoft Entra group object ID containing all students (for the RBAC scenario)
+- set `adminPassword` to a strong shared password
+- set `studentPrincipalId` to the Entra group containing this group's students
+- set `alertEmail` for budget and metric alert notifications
 
-### Step 2 — Deploy
+Repeat for each group.
+
+### Step 2 — Deploy to each group subscription
+
+Run the deployment once per group, targeting that group's subscription:
 
 ```bash
+# Group 1
+az account set --subscription "Lab-Sub-01"
 az deployment sub create \
   --location eastus \
   --template-file infra/main.bicep \
-  --parameters infra/parameters.bicepparam
+  --parameters infra/parameters-group1.bicepparam
+
+# Group 2
+az account set --subscription "Lab-Sub-02"
+az deployment sub create \
+  --location eastus \
+  --template-file infra/main.bicep \
+  --parameters infra/parameters-group2.bicepparam
+
+# Repeat for each group
 ```
 
-The deployment automatically creates all resource groups:
-- `<labName>-shared-rg` — shared resources (Log Analytics, managed identity)
-- `<labName>-<prefix>-rg` — per-student resources (one RG per student)
-
-Deployment takes approximately 10-15 minutes depending on region and VM availability.
+Deployment takes approximately 15-20 minutes per group (Bastion adds some time).
 
 ### Step 3 — Verify deployment
 
-After deployment completes, verify:
+After each deployment completes:
 
 ```bash
-# List all lab resource groups
+# List resource groups
 az group list \
   --query "[?starts_with(name, 'azure101lab')].{name:name, location:location}" \
   --output table
 
-# List shared resources
+# List lab resources
 az resource list \
-  --resource-group azure101lab-shared-rg \
+  --resource-group azure101lab-rg \
   --query "[].{name:name, type:type}" \
   --output table
 
-# Confirm VMs are deallocated in each student RG (this is intentional)
-az vm list \
-  --resource-group azure101lab-userA-rg \
-  --show-details \
-  --query "[].{name:name, powerState:powerState}" \
+# Confirm VMs are running (not deallocated — this is the new design)
+az vm list -d \
+  --query "[].{name:name, powerState:powerState, resourceGroup:resourceGroup}" \
+  --output table
+
+# Verify Bastion is deployed
+az network bastion list \
+  --query "[].{name:name, resourceGroup:resourceGroup}" \
   --output table
 ```
 
-Expected output: All VMs should show `VM deallocated`.
+Expected: All VMs should be **running**. Bastion should exist in the lab RG.
 
-### Step 4 — Assign subscription Reader to students
+### Step 4 — Assign subscription Reader to students (for Module 5)
 
-Students need **Reader** at the subscription scope to complete Module 5. This allows them to view the subscription overview (cost summary and resource counts), access Cost Management cost analysis at subscription scope, view budgets, and see Azure Policy compliance. This is separate from the resource group-scoped Reader that Bicep assigns, which is part of the RBAC fault in Module 1.
-
-The resource group-scoped **Contributor** role (assigned during the Module 1 RBAC upgrade) handles tag operations and resource group-level cost analysis.
-
-#### Option A — Assign via CLI
+Students need **Reader** at the subscription scope for Cost Management and Policy Compliance views.
 
 ```bash
-# Assign Reader on the subscription to the student group (or individual users)
 az role assignment create \
   --assignee <student-principal-id> \
   --role "Reader" \
   --scope "/subscriptions/<sub-id>"
 ```
 
-#### Option B — Assign via portal
-
-1. Open the lab subscription in the Azure portal
-2. Go to **Access control (IAM)**
-3. Click **Add** → **Add role assignment**
-4. Select **Reader**
-5. Select the student group or individual users
-6. Click **Review + assign**
-
-#### Why this is needed
-
-| Module 5 Task | Required Permission | Provided By |
-|---|---|---|
-| View subscription overview | `Microsoft.Resources/subscriptions/read` | Reader on subscription |
-| Cost Management (subscription scope) | `Microsoft.CostManagement/*/read` | Reader on subscription |
-| View budgets | `Microsoft.Consumption/budgets/read` | Reader on subscription |
-| View policy compliance | `Microsoft.Authorization/policyAssignments/read` | Reader on subscription |
-| Cost Management (RG scope) | `Microsoft.CostManagement/*/read` | Contributor on RG |
-| View and apply tags | `Microsoft.Resources/tags/*` | Contributor on RG |
+Contributor on the resource group (assigned via Bicep) handles resource modifications. Subscription Reader adds visibility into cost management, budgets, and policy compliance at the subscription level.
 
 ---
 
 ## What gets deployed
 
-### Resource group structure
+### Per group subscription
 
 | Resource Group | Contents |
 |---|---|
-| `azure101lab-shared-rg` | Log Analytics workspace, Data Collection Rule, managed identity, deployment script |
-| `azure101lab-userA-rg` | All per-user resources for userA |
-| `azure101lab-userB-rg` | All per-user resources for userB |
-| (one RG per student prefix) | ... |
+| `azure101lab-shared-rg` | Log Analytics workspace, DCR, managed identity, fault injection script |
+| `azure101lab-rg` | All lab resources (VNets, VMs, Bastion, storage, NSGs, flow logs, alerts) |
 
 ### Shared resources (in `azure101lab-shared-rg`)
 
 | Resource | Name | Purpose |
 |---|---|---|
-| Log Analytics workspace | `azure101lab-law` | Shared workspace for KQL and monitoring exercises |
-| Data Collection Rule | `azure101lab-dcr` | Routes VM telemetry to the workspace |
-| User-assigned managed identity | `azure101lab-script-identity` | Runs the fault injection deployment script |
+| Log Analytics workspace | `azure101lab-law` | Shared workspace for KQL, metrics, flow logs |
+| Data Collection Rule | `azure101lab-dcr` | Routes VM perf counters + syslog to workspace |
+| Managed Identity | `azure101lab-script-identity` | Runs fault injection deployment script |
 
-### Per-user resources (in `azure101lab-<prefix>-rg`)
+### Lab resources (in `azure101lab-rg`)
 
-For each user prefix (e.g., `userA` in `azure101lab-userA-rg`):
-
-| Resource | Name pattern | Purpose |
+| Resource | Name | Purpose |
 |---|---|---|
-| Virtual Network | `userA-vnet` | Lab network with `10.10.0.0/16` address space |
-| Management Subnet | `userA-mgmt-snet` | `10.10.1.0/24` — unused, exists for comparison |
-| Workload Subnet | `userA-workload-snet` | `10.10.2.0/24` — VM subnet with NSG and route table |
-| Network Security Group | `userA-nsg` | Associated to workload subnet, contains fault |
-| Route Table | `userA-rt` | Associated to workload subnet, contains fault |
-| Network Interface | `userA-nic` | In workload subnet, no public IP |
-| Virtual Machine | `userA-vm` | Ubuntu 22.04, Standard_B1s, deallocated |
-| Storage Account | `useraazure101labst` | Boot diagnostics target |
+| VNet 1 | `azure101lab-vnet1` | Workload VNet with AzureBastionSubnet |
+| VNet 2 | `azure101lab-vnet2` | Database VNet |
+| VNet Peering | `vnet1-to-vnet2`, `vnet2-to-vnet1` | Cross-VNet connectivity |
+| NSG 1 | `azure101lab-nsg1` | On VNet1 workload subnet (deny outbound to VNet2) |
+| NSG 2 | `azure101lab-nsg2` | On VNet2 workload subnet (deny inbound from VNet1) |
+| Bastion | `azure101lab-bastion` | SSH access to both VMs |
+| VM 1 | `azure101lab-vm1` | Ubuntu 22.04, Standard_B1s, 4 GB data disk |
+| VM 2 | `azure101lab-vm2` | Ubuntu 22.04, Standard_B1s, TCP listener on 1433 |
+| Storage Account | `azure101labst` | Blob container `lab-data`, boot diagnostics |
+| NSG Flow Logs | Per NSG | Flow logs to Log Analytics (Traffic Analytics) |
+| Storage Diagnostics | On blob service | StorageBlobLogs to Log Analytics |
 
-Each subsequent user gets the next /16 block: userB = `10.11.0.0/16`, userC = `10.12.0.0/16`, etc.
+### Subscription-level resources
+
+| Resource | Purpose |
+|---|---|
+| Azure Policy (Audit) | Tag enforcement for `Department` and `Environment` |
+| Budget ($50/month) | Spending threshold with email alerts at 80% and 100% |
+| Activity Log diag setting | Forwards Activity Log to Log Analytics |
 
 ---
 
 ## Baked-in faults
 
-The Bicep deployment includes intentional misconfigurations. **Do not fix these before the lab.** They are the lab exercises.
+**Do not fix these before the lab.** They are the lab exercises.
 
-### Fault 1 — VM is deallocated
-
-| Detail | Value |
-|---|---|
-| **Scenario** | VM Troubleshooting (Module 1) |
-| **What's wrong** | VM is in `Deallocated` power state |
-| **How it was created** | Deployment script runs `az vm deallocate` after VM creation |
-| **What students see** | VM shows as stopped/deallocated in the portal Overview page |
-| **Expected discovery path** | Check VM Overview → Power state shows deallocated → Review Activity Log for stop/deallocate operation → Note the timestamp |
-| **Resolution** | Start the VM from the portal or CLI |
-| **Discussion points** | Difference between stopped (still billing for compute reservation) vs deallocated (no compute billing). How Activity Log captures who/what stopped the VM. |
-
-### Fault 2 — Failed VM extension
+### Fault 1 — CPU spike cron job (Module 1)
 
 | Detail | Value |
 |---|---|
-| **Scenario** | VM Troubleshooting (Module 1) |
-| **What's wrong** | Custom Script Extension is in a `Failed` state |
-| **How it was created** | Extension attempts to run `/opt/nonexistent-setup-script.sh` which does not exist |
-| **What students see** | Extensions + applications blade shows `FailedCustomScript` with a failure status |
-| **Expected discovery path** | After starting the VM → Check Extensions blade → See failed extension → Review error message → Identify that the script path does not exist |
-| **Resolution** | Remove or fix the failed extension |
-| **Discussion points** | Extensions run inside the guest OS. A failed extension does not prevent the VM from running. How to view extension logs (/var/log/azure/). |
+| **What's wrong** | Cron job on VM1 runs `stress --cpu 1 --timeout 600` every hour at minute 0 |
+| **Impact** | 100% CPU for 10 min/hour on a 1-vCPU VM (Standard_B1s) |
+| **What students see** | Periodic unresponsiveness, 100% CPU in Azure Monitor metrics |
+| **Resolution** | Resize VM1 to 2+ vCPU; spike then uses ≤50% |
 
-### Fault 3 — NSG DenyAllInbound rule
+### Fault 2 — Data disk at capacity (Module 3)
 
 | Detail | Value |
 |---|---|
-| **Scenario** | NSG / Subnet Validation (Module 2) |
-| **What's wrong** | NSG has a `DenyAllInbound` rule at priority 200 that blocks all inbound traffic |
-| **How it was created** | Explicit security rule in the Bicep NSG definition |
-| **What students see** | After starting the VM, any inbound connectivity attempt fails. Effective security rules show deny at a priority higher than default rules. |
-| **Expected discovery path** | Open NSG → Review inbound rules → Notice DenyAllInbound at priority 200 → Recognize this is above the default AllowVnetInBound (65000) → Check Effective security rules on the NIC → Confirm the deny applies |
-| **Resolution** | Delete the DenyAllInbound rule, or add a higher-priority allow rule (e.g., priority 100) for required traffic |
-| **Discussion points** | NSG rule priority (lower number = higher priority). Default rules vs custom rules. Subnet-level vs NIC-level NSG association. Effective security rules combine both. |
+| **What's wrong** | 4 GB data disk on VM1 filled to >80% with `app-logs.dat` |
+| **Impact** | Disk alert fires, application at risk of data loss |
+| **What students see** | Fired metric alert, `df -h /mnt/data` shows >80% |
+| **Resolution** | Resize disk in Azure + extend partition/filesystem in OS |
 
-### Fault 4 — Blackhole route
+### Fault 3 — NSG blocks cross-VNet traffic (Module 2)
 
 | Detail | Value |
 |---|---|
-| **Scenario** | Route Table / Routing (Module 3) |
-| **What's wrong** | Route table has a `0.0.0.0/0 → None` route that drops all outbound traffic |
-| **How it was created** | Custom route in the Bicep route table definition with `nextHopType: 'None'` |
-| **What students see** | VM cannot reach any external destination. Effective routes on the NIC show `0.0.0.0/0` with next hop `None`. |
-| **Expected discovery path** | Open NIC → Effective routes → See `0.0.0.0/0` next hop `None` → Open route table → Identify `blackhole-default` route → Understand this overrides the default internet route |
-| **Resolution** | Delete the `blackhole-default` route from the route table |
-| **Discussion points** | Route tables override system routes. `None` next hop means drop traffic. Effective routes show the actual routing behavior, not just what's configured. UDR vs system routes. |
+| **What's wrong** | Custom deny rules on NSG1 (outbound to VNet2) and NSG2 (inbound from VNet1) block all cross-VNet traffic |
+| **Impact** | VM1 cannot reach VM2's SQL service |
+| **What students see** | `nc -zv <VM2-IP> 1433` times out |
+| **Resolution** | Add allow rules at priority <4096 on both NSG1 (outbound) and NSG2 (inbound) for port 1433 |
 
-### Fault 5 — Reader role (RBAC)
+### Fault 4 — Missing tags (Module 5)
 
 | Detail | Value |
 |---|---|
-| **Scenario** | VM Troubleshooting — RBAC Discovery (Module 1) |
-| **What's wrong** | Students have `Reader` role on their resource group, which is insufficient to start VMs, modify NSGs, or delete routes |
-| **How it was created** | Optional RBAC assignment in Bicep (requires `studentPrincipalId` parameter) |
-| **What students see** | "You do not have permission" or "Authorization failed" when attempting to start the VM in Module 1 |
-| **Expected discovery path** | Attempt to start VM → Get permission denied → Open Access Control (IAM) on their resource group → Review role assignments → See Reader role → Understand Reader allows view but not modify |
-| **Resolution** | Proctor upgrades the student to Contributor role (see "Mid-lab RBAC upgrade" below) |
-| **Discussion points** | Reader vs Contributor vs Owner. Scope hierarchy (resource, resource group, subscription). Least-privilege principle. Inherited vs direct role assignments. |
+| **What's wrong** | All resources missing `Department` and `Environment` tags |
+| **Impact** | Azure Policy shows non-compliant resources |
+| **What students see** | Policy → Compliance shows non-compliant count |
+| **Resolution** | Apply required tags to resources |
 
-### Fault 6 — Missing tags and cost concerns
+### Fault 5 — No data-plane RBAC (Module 6)
 
 | Detail | Value |
 |---|---|
-| **Scenario** | Cost and Policy Validation (Module 5) |
-| **What's wrong** | Resources are missing `Department` and `Environment` tags that organization policy may require |
-| **How it was created** | Bicep intentionally omits tags on all per-user resources |
-| **What students see** | Resources have no tags. If Azure Policy is configured (see "Optional Policy setup"), deployments or compliance checks flag non-compliant resources. |
-| **Expected discovery path** | Open any resource → Check Tags → See no tags applied → Review cost implications of resources left running → Identify VM SKU, storage SKU, and disk as cost items |
-| **Resolution** | Apply required tags. Identify resources that could be downsized or removed. |
-| **Discussion points** | Tags as organizational metadata. Tag governance via Azure Policy. Cost awareness: deallocated VMs still incur disk costs. Storage account costs. How to identify orphaned resources. |
+| **What's wrong** | Students have Contributor (control plane) but not `Storage Blob Data Contributor` (data plane) |
+| **Impact** | Cannot upload/download blobs |
+| **What students see** | 403 AuthorizationPermissionMismatch on blob upload |
+| **Resolution** | Assign `Storage Blob Data Contributor` on the storage account |
+
+### Fault 6 — Test blob + storage logging (Module 7)
+
+| Detail | Value |
+|---|---|
+| **What's wrong** | Fault injection uploads a test blob; storage diagnostic logs capture access events |
+| **Impact** | Serves as audit investigation evidence |
+| **What students see** | `StorageBlobLogs` entries in Log Analytics |
+| **Resolution** | Query and report on who accessed what |
 
 ---
 
-## Mid-lab RBAC upgrade
+## Module walkthrough guide
 
-If you configured the RBAC scenario (set `studentPrincipalId` in parameters), students will initially have only `Reader` access on their own resource group. After they complete the RBAC troubleshooting module and identify the problem, upgrade their access:
+### Module 1 — VM Performance (30 min)
 
-### Option A — Upgrade via CLI
+**Present:** "Users report the app on VM1 becomes unresponsive for ~10 minutes every hour."
 
-```bash
-# Replace <student-principal-id> with the Entra group or user object ID
-# Repeat for each student resource group, or assign at subscription scope
-az role assignment create \
-  --assignee <student-principal-id> \
-  --role "Contributor" \
-  --scope "/subscriptions/<sub-id>/resourceGroups/azure101lab-userA-rg"
-```
+**Expected path:** Azure Monitor metrics → see periodic 100% CPU → Bastion SSH → `top` shows `stress` → identify 1-vCPU bottleneck → resize VM → verify post-resize metrics.
 
-### Option B — Upgrade via portal
+**Teaching moments:** Azure Monitor metric analysis, VM sizing, Bastion access, connecting metrics to real symptoms.
 
-1. Open the student's resource group in the Azure portal
-2. Go to **Access control (IAM)**
-3. Click **Add** → **Add role assignment**
-4. Select **Contributor**
-5. Select the student group or individual users
-6. Click **Review + assign**
+### Module 2 — Network Connectivity / NSG (30 min)
 
-### Timing
+**Present:** "VM1 cannot connect to the database service on VM2 (port 1433)."
 
-Upgrade students to Contributor during Module 1, after they discover the Reader role limitation and document their finding. This is typically around the 20-minute mark in a 120-minute delivery. Students need Contributor access to start the VM and continue with the remaining modules.
+**Expected path:** Bastion to VM1 → `nc -zv <VM2-IP> 1433` fails → review NSG1 and NSG2 rules → find deny rules blocking cross-VNet traffic → add allow rules at higher priority on both sides → verify.
 
----
+**Teaching moments:** NSG rules evaluation, cross-VNet traffic, Network Watcher tools, both-sides-of-the-firewall thinking.
 
-## Optional: Azure Policy setup for tag enforcement
+### Module 3 — Disk Capacity (30 min)
 
-Azure Policy operates at subscription or management group scope, outside the resource group Bicep deployment. To add the policy dimension for Module 5:
+**Present:** "You received an alert that VM1's data disk is over 80% full."
 
-### Create a tag enforcement policy assignment
+**Expected path:** Azure Monitor alerts → Bastion SSH → `df -h /mnt/data` → resize disk in portal → `growpart` + `resize2fs` inside OS → verify.
 
-```bash
-# Audit resources missing the "Department" tag
-az policy assignment create \
-  --name "audit-department-tag" \
-  --display-name "Audit missing Department tag" \
-  --policy "/providers/Microsoft.Authorization/policyDefinitions/871b6d14-10aa-478d-b466-ef6698cc4571" \
-  --scope "/subscriptions/<sub-id>/resourceGroups/azure101lab-userA-rg" \
-  --params '{"tagName": {"value": "Department"}}'
+**Teaching moments:** Azure disk management, Linux partition/filesystem extension, alert-driven response.
 
-# Audit resources missing the "Environment" tag
-az policy assignment create \
-  --name "audit-environment-tag" \
-  --display-name "Audit missing Environment tag" \
-  --policy "/providers/Microsoft.Authorization/policyDefinitions/871b6d14-10aa-478d-b466-ef6698cc4571" \
-  --scope "/subscriptions/<sub-id>/resourceGroups/azure101lab-userA-rg" \
-  --params '{"tagName": {"value": "Environment"}}'
-```
+### Module 4 — Azure Monitor & KQL Evidence (30 min)
 
-This uses the built-in "Require a tag on resources" policy in **Audit** mode (not Deny), so it flags non-compliance without blocking student actions.
+**Present:** "Your manager needs KQL-based evidence of all issues and fixes."
 
-Policy compliance evaluation can take up to 30 minutes. Deploy policies before the lab starts.
+**Expected path:** Log Analytics → KQL queries for CPU trends, NSG flow logs, disk metrics → DCR validation → produce evidence.
 
----
+**Teaching moments:** KQL fundamentals, correlation of logs to events, Traffic Analytics, DCR configuration.
 
-## Scenario walkthrough guide
+### Module 5 — Cost & Policy Compliance (30 min)
 
-### Module 1 — VM Troubleshooting + RBAC Discovery (30-35 minutes)
+**Present:** "Review this environment for compliance and cost awareness."
 
-**Business symptom to present:** "A workload owner reports the VM is not responding."
+**Expected path:** Azure Policy → Compliance → non-compliant resources → apply tags → Cost Management → cost report by tag → review budget.
 
-**What's actually wrong:**
-1. VM is deallocated (Fault 1)
-2. Students have Reader role — cannot start VM (Fault 5)
-3. Custom Script Extension failed (Fault 2)
+**Teaching moments:** Tag governance, Azure Policy effects, Cost Management navigation, budget alerting.
 
-**Expected student investigation:**
-1. Open VM Overview — see Power state: `VM deallocated`
-2. Check Activity Log — see `Deallocate Virtual Machine` operation
-3. Attempt to start the VM — **get permission denied**
-4. Open Access Control (IAM) on the resource group
-5. Review role assignments — see Reader role
-6. Recognize Reader allows view but not modify
-7. Document: need Contributor at resource group scope
-8. **Notify the proctor** — proctor upgrades to Contributor (see "Mid-lab RBAC upgrade" below)
-9. Start the VM successfully
-10. After VM starts — check Extensions + applications blade
-11. See `FailedCustomScript` in failed state
-12. Review extension error detail — script path does not exist
-13. Remove the failed extension
+### Module 6 — RBAC Data Plane (20 min)
 
-**Key teaching moments:**
-- Power state vs Provisioning state distinction
-- Activity Log as an audit trail for operations
-- **Visibility does not equal authority — Reader role prevents write operations**
-- **Reader vs Contributor vs Owner role distinction**
-- **Scope hierarchy: resource, resource group, subscription, management group**
-- **Least-privilege principle: always start with the minimum required role**
-- Boot diagnostics and Run command as portal-native management tools (no public IP on this VM)
-- Extensions are guest-level operations that leave audit traces
+**Present:** "Upload a config file to the storage account's lab-data container."
 
-**Proctor action:** After students identify the RBAC problem and document their finding, upgrade them to Contributor (see "Mid-lab RBAC upgrade" below). This typically happens 15-20 minutes into Module 1.
+**Expected path:** Attempt blob upload → 403 → review IAM → understand control vs data plane → assign Storage Blob Data Contributor → upload succeeds.
 
-**Wrap-up questions:**
-- What is the difference between a stopped and deallocated VM?
-- Where would you find who stopped the VM?
-- Why couldn't you start the VM initially? What role did you need?
-- If you needed to allow someone to only restart VMs, what role would you assign?
-- What's the risk of assigning Owner at the subscription level?
-- Does a failed extension prevent the VM from running?
+**Teaching moments:** Control-plane vs data-plane RBAC, least privilege, role assignment scope.
 
----
+### Module 7 — Storage Access Audit (20 min)
 
-### Module 2 — NSG / Subnet Validation (15-20 minutes)
+**Present:** "Security flagged suspicious blob access. Investigate and report."
 
-**Business symptom to present:** "After starting the VM, traffic is not reaching it as expected."
+**Expected path:** Log Analytics → `StorageBlobLogs` → identify callers, IPs, operations → report findings.
 
-**What's actually wrong:**
-- DenyAllInbound rule at priority 200 blocks all inbound traffic (Fault 3)
+**Teaching moments:** Storage diagnostic logging, KQL for security investigation, audit trail.
 
-**Expected student investigation:**
-1. Open VM → Networking (or open the NIC directly)
-2. Confirm VM is in the workload subnet
-3. Confirm NSG is associated to the workload subnet
-4. Open NSG → Inbound security rules
-5. See `DenyAllInbound` at priority 200
-6. Recognize this blocks everything before any default allow rules fire
-7. Check Effective security rules on the NIC — confirm deny applies
-8. Delete the rule or add a higher-priority allow
+### Module 8 — Change Tracking (20 min)
 
-**Key teaching moments:**
-- NSG rule priority: lower number = higher priority = evaluated first
-- Default rules (65000-65500) are always present but custom rules override them
-- Effective security rules show the combined, evaluated view
-- Subnet-level NSG vs NIC-level NSG — where to look
+**Present:** "An auditor needs a report of all infrastructure changes made during the lab."
 
-**Wrap-up questions:**
-- If you add an allow rule at priority 300, will traffic get through? Why or why not?
-- What is the difference between subnet-level and NIC-level NSG association?
-- How do you view what rules are actually being applied vs configured?
+**Expected path:** Activity Log → find VM resize, NSG changes, disk resize, role assignments → Resource Graph `resourcechanges` → document audit trail.
 
----
-
-### Module 3 — Route Table / Routing (15-20 minutes)
-
-**Business symptom to present:** "After fixing the NSG, the VM still cannot reach external destinations."
-
-**What's actually wrong:**
-- Route table has `0.0.0.0/0 → None` blackhole route (Fault 4)
-
-**Expected student investigation:**
-1. Open the NIC → Effective routes
-2. See `0.0.0.0/0` with next hop type `None`
-3. Open the route table associated to the workload subnet
-4. See `blackhole-default` custom route
-5. Understand `None` means "drop the traffic"
-6. Delete the `blackhole-default` route
-7. Verify Effective routes now show the system default route for internet
-
-**Key teaching moments:**
-- User-defined routes (UDR) override system routes
-- `None` next hop drops traffic silently — no ICMP unreachable
-- Effective routes are the source of truth, not the route table alone
-- Route tables affect the entire subnet, not individual NICs
-
-**Wrap-up questions:**
-- What would happen if the next hop was a virtual appliance IP that doesn't exist?
-- How would you add a route for a specific destination without affecting all traffic?
-- Where do system routes come from?
-
----
-
-### Module 4 — Azure Monitor and KQL Triage (15-20 minutes)
-
-**Business symptom to present:** "Your team lead wants evidence of what went wrong. Show them."
-
-**What students should find:**
-- No new fault to discover — students use Monitor and KQL to find evidence of Faults 1-4
-
-**Expected student investigation:**
-1. Open Monitor → Activity Log (or Log Analytics workspace)
-2. Filter to the lab resource group and last few hours
-3. Find the VM deallocate operation (Fault 1 evidence)
-4. Find the extension failure event (Fault 2 evidence)
-5. Find NSG or route modification operations if students already fixed them
-6. Run KQL queries against the Log Analytics workspace:
-
-```kusto
-// Find all operations in the resource group
-AzureActivity
-| where TimeGenerated > ago(4h)
-| project TimeGenerated, OperationNameValue, ActivityStatusValue, Caller
-| order by TimeGenerated desc
-```
-
-```kusto
-// Look for failed operations
-AzureActivity
-| where TimeGenerated > ago(4h)
-| where ActivityStatusValue == "Failed" or ActivityStatusValue == "Failure"
-| project TimeGenerated, OperationNameValue, ActivityStatusValue, Properties
-```
-
-```kusto
-// Check VM heartbeat (may show gaps from when VM was deallocated)
-Heartbeat
-| where TimeGenerated > ago(4h)
-| summarize LastSeen=max(TimeGenerated) by Computer
-```
-
-**Key teaching moments:**
-- Activity Log records control plane operations (who did what, when)
-- KQL is a powerful filter/analysis tool — start broad, then narrow
-- Heartbeat gaps correlate with VM state changes
-- Evidence-based troubleshooting vs guessing
-
-**Wrap-up questions:**
-- How would you find who made a change to the NSG?
-- What's the difference between Activity Log and Diagnostics logs?
-- Can you set up an alert to notify you when a VM is deallocated?
-
----
-
-### Module 5 — Cost and Policy Validation (15-20 minutes)
-
-**Business symptom to present:** "Before we hand this environment off, review it for compliance and cost concerns."
-
-**Prerequisites:** Students must have subscription-level Reader (assigned in Step 4 of Deployment instructions) and Contributor on their resource group (assigned during Module 1 RBAC upgrade).
-
-**What students should find:**
-- Resources are missing the required `Department` and `Environment` tags (Fault 6)
-- Deallocated VMs still have managed disks incurring cost
-- Storage accounts incur cost even if empty
-- Subscription overview shows cost summary and resource counts
-- Cost Management → Cost analysis shows resource-level cost breakdowns
-- If Azure Policy is configured: compliance dashboard shows non-compliant resources
-
-**Expected student investigation:**
-1. Open any resource → Tags → Verify that `Department` and `Environment` tags are missing
-2. Check Policy → Compliance if policy assignments are configured → See non-compliant resources
-3. Open the **Subscriptions** blade → Select the lab subscription → Review the overview page for cost summary
-4. Open the resource group → **Cost analysis** (under Cost Management) → Group by resource type to identify cost-bearing items
-5. Note: deallocated VM = no compute charge, but managed disk still costs money
-6. Note: storage account exists and costs money even if unused
-7. Navigate to **Budgets** under Cost Management → Check for existing budgets or note the absence as a governance gap
-8. Document what tags should be applied and what resources could be cleaned up
-9. Note: costs may appear minimal since the lab was recently deployed — the focus is on learning where to find this information
-
-**Key teaching moments:**
-- Tags are metadata for billing, ownership, and environment tracking
-- In production, Azure Policy with Audit or Modify effects enforces tag compliance at scale
-- Deallocated ≠ free — disks, IPs, and storage still cost
-- Azure Policy can audit or enforce governance standards
-- Cost Management provides actual cost breakdowns at both subscription and resource group scope
-- The subscription overview gives a quick cost snapshot across all resource groups
-- Grouping by resource type helps identify which services drive cost
-- Budgets enable proactive spend management with alerting thresholds (e.g., email at 80% and 100% of budget)
-- Cost hygiene: regularly review what's running and what's needed
-
-**Wrap-up questions:**
-- What costs remain when a VM is deallocated?
-- How would you enforce that all resources must have a Department tag?
-- What's the difference between Audit and Deny policy effects?
-- Where would you go to set up a spending alert for your resource group?
-- What's the difference between viewing costs at the subscription level vs. the resource group level?
-
----
-
-## Delivery timing
-
-### 120-minute agenda
-
-| Time | Module | Notes |
-|---|---|---|
-| 0:00-0:10 | Orientation | Introduce lab, hand out prefixes, confirm portal access |
-| 0:10-0:45 | VM Troubleshooting + RBAC | Faults 1-2 + Fault 5: deallocated VM, Reader role, failed extension. Upgrade to Contributor mid-module. |
-| 0:45-1:05 | NSG / Subnet Validation | Fault 3: DenyAllInbound rule |
-| 1:05-1:25 | Route Table / Routing | Fault 4: blackhole route |
-| 1:25-1:40 | Azure Monitor and KQL | Evidence gathering for all previous faults |
-| 1:40-1:55 | Cost and Policy | Fault 6: missing tags, cost review |
-| 1:55-2:00 | Wrap-up | Recap findings, discuss teardown |
-
-### 90-minute condensed agenda
-
-| Time | Module | Notes |
-|---|---|---|
-| 0:00-0:10 | Orientation | Introduce lab, hand out prefixes |
-| 0:10-0:40 | VM Troubleshooting + RBAC | Faults 1-2 + Fault 5. Upgrade to Contributor mid-module. |
-| 0:40-0:55 | NSG + Routing | Faults 3-4 (combined) |
-| 0:55-1:10 | Azure Monitor and KQL | Evidence gathering |
-| 1:10-1:20 | Cost and Policy | Fault 6 |
-| 1:20-1:30 | Wrap-up | Recap, teardown |
+**Teaching moments:** Activity Log vs Resource Graph, change attribution, audit compliance.
 
 ---
 
 ## Teardown
 
-After the lab is complete:
-
-### Delete all lab resource groups
+After the lab is complete, for each group subscription:
 
 ```bash
-# Delete shared resources
+# Delete lab resource groups
 az group delete --name azure101lab-shared-rg --yes --no-wait
+az group delete --name azure101lab-rg --yes --no-wait
 
-# Delete each student resource group
-az group delete --name azure101lab-userA-rg --yes --no-wait
-az group delete --name azure101lab-userB-rg --yes --no-wait
-az group delete --name azure101lab-userC-rg --yes --no-wait
-# Repeat for each student prefix
-```
+# Policy assignments are at subscription scope — delete them
+az policy assignment delete --name "audit-department-tag"
+az policy assignment delete --name "audit-environment-tag"
 
-### Remove policy assignments (if configured)
+# Budget
+az consumption budget delete --budget-name "azure101lab-monthly-budget"
 
-```bash
-az policy assignment delete --name "audit-department-tag" \
-  --scope "/subscriptions/<sub-id>/resourceGroups/azure101lab-userA-rg"
-
-az policy assignment delete --name "audit-environment-tag" \
-  --scope "/subscriptions/<sub-id>/resourceGroups/azure101lab-userA-rg"
-# Repeat for each student resource group
-```
-
-### Confirm cleanup
-
-```bash
-az group list \
-  --query "[?starts_with(name, 'azure101lab')].name" \
-  --output tsv
-# Should return empty
+# Verify
+az group list --query "[?starts_with(name, 'azure101lab')].name" --output tsv
 ```
 
 ---
 
-## Troubleshooting the deployment itself
+## Troubleshooting the deployment
 
 ### Deployment fails on VM availability
 
-If the region does not have `Standard_B1s` capacity, either:
-- change `location` to a different region
-- or edit `user-environment.bicep` to use `Standard_B1ls_v2` or another small burstable SKU
+If the region lacks `Standard_B1s` capacity, change `location` or edit `user-environment.bicep` to use `Standard_B1ls_v2`.
 
-### Deployment script fails (VM deallocate)
+### Bastion deployment fails
 
-The deployment script uses a user-assigned managed identity. If it fails:
-1. Check the deployment script logs in the portal (resource type: `Microsoft.Resources/deploymentScripts`)
-2. Verify the managed identity has Contributor on each student resource group
-3. The identity role assignment and the deployment script are in the same deployment — if the identity was just created, the role may take a few minutes to propagate. Re-run the deployment.
+Bastion requires the subnet to be named exactly `AzureBastionSubnet` with at least a /26 prefix. Verify the VNet definition in `user-environment.bicep`.
+
+### Fault injection script fails
+
+Check deployment script logs in the portal (resource type: `Microsoft.Resources/deploymentScripts`). Common issues:
+- Managed identity role propagation delay — re-run the deployment
+- VM not yet fully provisioned — the script has a 30-minute timeout
 
 ### Storage account name conflict
 
-Storage account names are globally unique. If a name is taken, edit the naming pattern in `user-environment.bicep` to add a short suffix.
+Storage account names are globally unique. Edit the naming pattern in `user-environment.bicep` to add a short suffix.
+
+### NSG flow logs fail
+
+Network Watcher must be registered in the target region. Run `az network watcher configure --resource-group NetworkWatcherRG --locations <region> --enabled true`.
 
 ### RBAC assignment fails
 
-If `studentPrincipalId` is incorrect or the principal does not exist, the RBAC assignment will fail. Verify the Object ID:
-
+Verify the `studentPrincipalId` object ID:
 ```bash
-# For a group
 az ad group show --group "<group-name>" --query id --output tsv
-
-# For a user
 az ad user show --id "<user@domain.com>" --query id --output tsv
 ```

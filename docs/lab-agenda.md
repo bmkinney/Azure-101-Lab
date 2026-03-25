@@ -1,78 +1,74 @@
 # Lab Agenda
 
-## Recommended 120-minute agenda
+## Full agenda (8 modules)
 
-### 0:00-0:10
-Orientation
+### 0:00–0:10 — Orientation
 - lab goals and environment overview
-- hand out user prefixes and credentials
-- confirm portal and Cloud Shell access
+- hand out credentials and assign breakout rooms
+- confirm portal access and Bastion connectivity
 
-### 0:10-0:45
-VM Troubleshooting + RBAC Discovery
-- identify deallocated VM
-- review Activity Log
-- attempt to start the VM — get permission denied
-- investigate IAM, identify Reader role
-- proctor upgrades students to Contributor
-- start the VM
-- discover and address failed extension
+### 0:10–0:40 — Module 1: VM Performance
+- observe periodic unresponsiveness reported by users
+- investigate Azure Monitor CPU metrics on VM1
+- use Bastion to SSH and observe the stress process
+- resize VM1 to 2+ vCPU
+- verify CPU spike now uses ≤50%
 
-### 0:45-1:05
-NSG / Subnet Validation
-- identify DenyAllInbound rule at priority 200
-- review effective security rules
-- fix the deny rule
+### 0:40–1:10 — Module 2: Network Connectivity (NSG)
+- test VM1 → VM2 connectivity on port 1433 (fails)
+- investigate NSG rules on both VNets
+- add allow rules on both NSG1 and NSG2
+- verify connectivity with `nc -zv`
 
-### 1:05-1:25
-Route Table / Routing
-- identify blackhole route 0.0.0.0/0 → None
-- review effective routes
-- remove the blackhole route
+### 1:10–1:40 — Module 3: Disk Capacity
+- observe fired disk alert in Azure Monitor
+- SSH via Bastion to confirm disk >80% full
+- resize data disk in Azure
+- extend partition and filesystem inside the OS
+- verify utilization drops below threshold
 
-### 1:25-1:40
-Azure Monitor and KQL Triage
-- review Activity Log for evidence of earlier faults
-- run KQL queries against shared Log Analytics workspace
-- correlate evidence to fault domains
+### 1:40–2:10 — Module 4: Azure Monitor & KQL Evidence
+- write KQL queries for CPU trend, NSG flow log blocks, disk utilization
+- validate DCR is collecting all expected telemetry
+- produce query-based evidence of Modules 1-3
 
-### 1:40-1:55
-Cost and Policy Validation
-- identify missing tags
-- review cost implications of deallocated VMs
-- review policy compliance if configured
+### 2:10–2:40 — Module 5: Cost & Policy Compliance
+- identify non-compliant resources via Azure Policy
+- apply required Department and Environment tags
+- generate ACM cost report by tag at subscription scope
+- review budget configuration and alert thresholds
 
-### 1:55-2:00
-Wrap-up
-- recap findings
+### 2:40–3:10 — Module 6: RBAC (Data Plane)
+- attempt blob upload to storage account (403 error)
+- investigate control-plane vs data-plane RBAC
+- assign Storage Blob Data Contributor to self
+- successfully upload a file
+
+### 3:10–3:30 — Module 7: Storage Access Audit
+- query StorageBlobLogs in Log Analytics
+- identify callers, operations, and IP addresses
+- report findings on who accessed blob storage
+
+### 3:30–3:50 — Module 8: Change Tracking
+- use Activity Log and Resource Graph to document changes
+- identify VM resize, NSG modifications, disk resize, role assignments
+- produce audit report with timestamps and callers
+
+### 3:50–4:00 — Wrap-up
+- recap findings and key learnings
 - discuss real-world parallels
 - confirm teardown plan
 
-## Condensed 90-minute agenda
+## Condensed agenda (core modules only)
 
-### 0:00-0:10
-Orientation
-- hand out prefixes and credentials
-- confirm access
+If time is limited, prioritize Modules 1–5 (core operations):
 
-### 0:10-0:40
-VM Troubleshooting + RBAC Discovery
-- discover deallocated VM, hit permission denied
-- identify Reader role, proctor upgrades to Contributor
-- start VM, fix failed extension
+### 0:00–0:10 — Orientation
+### 0:10–0:40 — Module 1: VM Performance
+### 0:40–1:10 — Module 2: Network Connectivity (NSG)
+### 1:10–1:35 — Module 3: Disk Capacity
+### 1:35–2:00 — Module 4: Azure Monitor & KQL Evidence
+### 2:00–2:25 — Module 5: Cost & Policy Compliance
+### 2:25–2:30 — Wrap-up
 
-### 0:40-0:55
-NSG and Routing (combined)
-- identify and fix DenyAllInbound rule
-- identify and fix blackhole route
-
-### 0:55-1:10
-Azure Monitor and KQL Triage
-- find evidence of earlier faults
-
-### 1:10-1:20
-Cost and Policy
-- review tags, costs, compliance
-
-### 1:20-1:30
-Wrap-up
+Modules 6-8 (RBAC, Storage Audit, Change Tracking) can be assigned as follow-up exercises or run in a second session.

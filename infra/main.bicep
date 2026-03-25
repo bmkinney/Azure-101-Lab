@@ -1,11 +1,13 @@
 // main.bicep - Azure 101 Lab orchestrator (subscription-scoped)
-// Deploys shared RG + per-student RGs with baked-in troubleshooting faults
+// Deploys shared RG + single lab RG with baked-in troubleshooting faults
+// Deploy once per group subscription (each group = 3 students sharing one subscription)
+// All students in a group collaborate in a breakout room on the same set of resources.
 //
 // Usage:
 //   az deployment sub create \
 //     --location <region> \
 //     --template-file infra/main.bicep \
-//     --parameters infra/parameters.example.bicepparam
+//     --parameters infra/parameters.bicepparam
 
 targetScope = 'subscription'
 
@@ -13,11 +15,8 @@ targetScope = 'subscription'
 // PARAMETERS
 // ============================================================
 
-@description('Base name for the lab. Used to derive resource group names.')
+@description('Base name for the lab. Used to derive resource group and resource names.')
 param labName string = 'azure101lab'
-
-@description('Array of user prefixes to deploy environments for (e.g., ["userA", "userB", "userC"]).')
-param userPrefixes array
 
 @description('Azure region for all resources.')
 param location string
@@ -29,12 +28,15 @@ param adminUsername string = 'azureuser'
 @description('Admin password for all lab VMs. Must meet Azure complexity requirements.')
 param adminPassword string
 
-@description('Optional: Object ID of a Microsoft Entra group or user to assign Reader role for RBAC scenario. Leave empty to skip RBAC assignment.')
+@description('Optional: Object ID of a Microsoft Entra group or user to assign Contributor role on the lab RG. Leave empty to skip.')
 param studentPrincipalId string = ''
 
-@description('Principal type for the RBAC assignment. Use "Group" for an Entra group or "User" for individual users.')
+@description('Principal type for the student RBAC assignment.')
 @allowed(['Group', 'User'])
 param studentPrincipalType string = 'Group'
+
+@description('Contact email for budget and metric alert notifications.')
+param alertEmail string = ''
 
 // ============================================================
 // RESOURCE GROUPS
@@ -45,10 +47,10 @@ resource sharedRg 'Microsoft.Resources/resourceGroups@2024-03-01' = {
   location: location
 }
 
-resource studentRgs 'Microsoft.Resources/resourceGroups@2024-03-01' = [for prefix in userPrefixes: {
-  name: '${labName}-${prefix}-rg'
+resource labRg 'Microsoft.Resources/resourceGroups@2024-03-01' = {
+  name: '${labName}-rg'
   location: location
-}]
+}
 
 // ============================================================
 // SHARED RESOURCES (in shared RG)
@@ -65,87 +67,146 @@ module shared 'modules/shared.bicep' = {
 }
 
 // ============================================================
-// RBAC: Managed identity → Contributor on each student RG
-// Required for the fault-injection script to deallocate VMs and
-// install extensions in student resource groups
+// POLICY: Tag enforcement at subscription scope
+// Audits resources missing required Department and Environment tags
 // ============================================================
 
-module identityRole 'modules/role-assignment.bicep' = [for (prefix, i) in userPrefixes: {
-  name: 'identity-role-${prefix}'
-  scope: studentRgs[i]
+module policy 'modules/policy.bicep' = {
+  name: 'policy-assignments'
+  params: {
+    location: location
+  }
+}
+
+// ============================================================
+// BUDGET: Subscription-level spending threshold
+// ============================================================
+
+resource labBudget 'Microsoft.Consumption/budgets@2023-11-01' = if (!empty(alertEmail)) {
+  name: '${labName}-monthly-budget'
+  properties: {
+    timePeriod: {
+      startDate: '${substring(utcNow('yyyy-MM-dd'), 0, 8)}01' // first of current month
+    }
+    timeGrain: 'Monthly'
+    amount: 50
+    category: 'Cost'
+    notifications: {
+      actual80pct: {
+        enabled: true
+        operator: 'GreaterThanOrEqualTo'
+        threshold: 80
+        contactEmails: [alertEmail]
+        thresholdType: 'Actual'
+      }
+      actual100pct: {
+        enabled: true
+        operator: 'GreaterThanOrEqualTo'
+        threshold: 100
+        contactEmails: [alertEmail]
+        thresholdType: 'Actual'
+      }
+    }
+  }
+}
+
+// ============================================================
+// ACTIVITY LOG → Log Analytics diagnostic setting
+// Forwards subscription Activity Log to the shared workspace for KQL queries
+// ============================================================
+
+resource activityLogDiag 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
+  name: '${labName}-activity-to-law'
+  properties: {
+    workspaceId: shared.outputs.logAnalyticsWorkspaceId
+    logs: [
+      { categoryGroup: 'allLogs', enabled: true }
+    ]
+  }
+}
+
+// ============================================================
+// RBAC: Managed identity → Contributor on lab RG
+// Required for the fault-injection script to configure VMs
+// ============================================================
+
+module identityRole 'modules/role-assignment.bicep' = {
+  name: 'identity-role'
+  scope: labRg
   params: {
     principalId: shared.outputs.scriptIdentityPrincipalId
     builtInRoleId: 'b24988ac-6180-42a0-ab88-20f7382dd24c' // Contributor
     principalType: 'ServicePrincipal'
   }
-}]
+}
 
 // ============================================================
-// PER-USER ENVIRONMENTS (each in its own RG)
-// Each user gets: VNet, subnets, NSG (deny rule), route table (blackhole),
-// NIC, VM (failed extension), storage account
+// LAB ENVIRONMENT (single RG for the group)
+// All students collaborate on the same resources:
+// 2 VNets (peered), 2 VMs, NSGs, Bastion, data disk, storage account
 // ============================================================
 
-module userEnvironments 'modules/user-environment.bicep' = [for (prefix, i) in userPrefixes: {
-  name: 'env-${prefix}'
-  scope: studentRgs[i]
+module labEnvironment 'modules/user-environment.bicep' = {
+  name: 'lab-environment'
+  scope: labRg
   params: {
-    userPrefix: prefix
+    labName: labName
     location: location
-    addressIndex: i
     adminUsername: adminUsername
     adminPassword: adminPassword
     dataCollectionRuleId: shared.outputs.dataCollectionRuleId
+    logAnalyticsWorkspaceId: shared.outputs.logAnalyticsWorkspaceId
+    alertEmail: alertEmail
   }
-}]
+}
 
 // ============================================================
 // FAULT INJECTION SCRIPT (in shared RG)
-// Installs FailedCustomScript extension and deallocates VMs across student RGs
+// Installs CPU-spike cron job on VM1 and fills data disk to >80%
 // ============================================================
 
-var vmRgPairs = [for (prefix, i) in userPrefixes: '${prefix}-vm:${labName}-${prefix}-rg']
-var vmRgPairList = join(vmRgPairs, ',')
-
-module vmStop 'modules/vm-stop.bicep' = {
+module faultInjection 'modules/fault-injection.bicep' = {
   name: 'inject-faults'
   scope: sharedRg
   params: {
-    vmRgPairList: vmRgPairList
+    vmName: '${labName}-vm1'
+    vmResourceGroup: labRg.name
+    storageAccountName: labEnvironment.outputs.storageAccountName
     location: location
     scriptIdentityId: shared.outputs.scriptIdentityId
     subscriptionId: subscription().subscriptionId
     armEndpoint: environment().resourceManager
   }
-  dependsOn: [userEnvironments, identityRole]
+  dependsOn: [labEnvironment, identityRole]
 }
 
 // ============================================================
-// RBAC: Student Reader on each student RG (Optional)
-// FAULT: Reader is insufficient — students need Contributor to remediate issues
+// RBAC: Student Contributor on the lab RG (Optional)
+// Contributor covers control plane but NOT data plane (storage blob access)
+// The data-plane gap is the RBAC challenge in Module 6
 // ============================================================
 
-module studentReader 'modules/role-assignment.bicep' = [for (prefix, i) in userPrefixes: if (!empty(studentPrincipalId)) {
-  name: 'student-reader-${prefix}'
-  scope: studentRgs[i]
+module studentContributor 'modules/role-assignment.bicep' = if (!empty(studentPrincipalId)) {
+  name: 'student-contributor'
+  scope: labRg
   params: {
     principalId: studentPrincipalId
-    builtInRoleId: 'acdd72a7-3385-48ef-bd42-f606fba81ae7' // Reader
+    builtInRoleId: 'b24988ac-6180-42a0-ab88-20f7382dd24c' // Contributor
     principalType: studentPrincipalType
   }
-}]
+}
 
 // ============================================================
 // OUTPUTS
 // ============================================================
 
 output sharedResourceGroup string = sharedRg.name
+output labResourceGroup string = labRg.name
 output labWorkspaceId string = shared.outputs.logAnalyticsWorkspaceId
-output deployedUsers array = [for (prefix, i) in userPrefixes: {
-  userPrefix: prefix
-  resourceGroup: studentRgs[i].name
-  vmName: userEnvironments[i].outputs.vmName
-  privateIp: userEnvironments[i].outputs.nicPrivateIp
-  vnetAddressSpace: userEnvironments[i].outputs.vnetAddressSpace
-  storageAccount: userEnvironments[i].outputs.storageAccountName
-}]
+output vm1Name string = labEnvironment.outputs.vm1Name
+output vm2Name string = labEnvironment.outputs.vm2Name
+output vm1PrivateIp string = labEnvironment.outputs.vm1PrivateIp
+output vm2PrivateIp string = labEnvironment.outputs.vm2PrivateIp
+output vnet1AddressSpace string = labEnvironment.outputs.vnet1AddressSpace
+output vnet2AddressSpace string = labEnvironment.outputs.vnet2AddressSpace
+output storageAccount string = labEnvironment.outputs.storageAccountName

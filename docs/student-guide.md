@@ -2,141 +2,78 @@
 
 ## Overview
 
-This lab is a 90-120 minute hands-on Azure Operations lab. Your lab environment has been pre-deployed by the proctor. Each participant works in a sandbox subscription and is responsible for troubleshooting resources inside their own environment.
+This is a hands-on Azure Operations lab. Your environment has been pre-deployed by the proctor into a dedicated group subscription. Each group of 3 students shares one resource group with one set of resources containing intentional misconfigurations. You will work together in a breakout room to diagnose and resolve each challenge.
 
-Your environment contains intentional misconfigurations. Your job is to find them, diagnose the root cause, and fix them.
+Your job is to observe the symptoms, diagnose root causes, and prove that you fixed each problem. No one will hand you the steps — you need to think through each challenge as a team.
 
 ## Learning objectives
 
 By the end of the lab, participants should be able to:
 
-- validate VM, network, and storage configuration
-- troubleshoot VM state and extension issues
-- troubleshoot NSG and routing issues using effective methods
-- use Azure Monitor and basic KQL for triage and evidence gathering
-- recognize RBAC scope issues and permission problems
-- identify basic cost and policy concerns
+- use Azure Monitor metrics to identify VM performance problems
+- troubleshoot cross-VNet connectivity using NSG analysis and Network Watcher
+- resize Azure disks and extend Linux filesystems
+- write KQL queries to provide evidence of operational issues and resolutions
+- identify Azure Policy non-compliance and produce cost reports
+- distinguish control-plane vs data-plane RBAC and fix permission gaps
+- investigate storage access patterns using Log Analytics
+- track infrastructure changes using Activity Logs and Resource Graph
 
 ## Lab assumptions
 
-- a sandbox subscription already exists
+- each group of 3 students shares one Azure subscription and one resource group
 - your lab environment has been pre-deployed by the proctor
-- each participant has resources deployed under their assigned user prefix
-- Azure Policy may already be applied at the subscription or management group scope
+- all group members collaborate on the same set of resources
+- you have Contributor access on your resource group (control-plane operations)
+- Azure Bastion is available for SSH access to your VMs
 
 ## Your assigned environment
 
 Your proctor will give you:
-- your assigned user prefix (e.g., `userA`)
-- your resource group name (e.g., `azure101lab-userA-rg`)
-- login credentials for your VM
+- your group's resource group name (e.g., `azure101lab-rg`)
+- login credentials for the VMs
 
 ### Naming convention
 
-All resources in your environment follow this pattern:
+| Resource | Name |
+|---|---|
+| VNet 1 (workload) | `azure101lab-vnet1` |
+| VNet 2 (database) | `azure101lab-vnet2` |
+| NSG 1 | `azure101lab-nsg1` |
+| NSG 2 | `azure101lab-nsg2` |
+| VM 1 (workload) | `azure101lab-vm1` |
+| VM 2 (database) | `azure101lab-vm2` |
+| Bastion | `azure101lab-bastion` |
+| Storage Account | `azure101labst` |
+| Data Disk | `azure101lab-vm1-datadisk` |
 
-- virtual network: `<userPrefix>-vnet`
-- management subnet: `<userPrefix>-mgmt-snet`
-- workload subnet: `<userPrefix>-workload-snet`
-- network security group: `<userPrefix>-nsg`
-- route table: `<userPrefix>-rt`
-- virtual machine: `<userPrefix>-vm`
-- network interface: `<userPrefix>-nic`
-- storage account: `<userPrefix>azure101labst` (lowercase, no hyphens)
+### Environment topology
 
-### Your environment resources
+Your group environment contains:
 
-| Resource | Name (example for `userA`) | Notes |
-|---|---|---|
-| Virtual Network | `userA-vnet` | Contains management and workload subnets |
-| Network Security Group | `userA-nsg` | Associated to workload subnet |
-| Route Table | `userA-rt` | Associated to workload subnet |
-| Network Interface | `userA-nic` | In workload subnet, no public IP |
-| Virtual Machine | `userA-vm` | Ubuntu 22.04, Standard_B1s |
-| Storage Account | `useraazure101labst` | Boot diagnostics |
-
-### Important notes
-
-- this lab does not assign a public IP directly to the VM NIC
-- for guest-level troubleshooting, use portal-native tools such as boot diagnostics, serial console, and Run command
-- the VM is a private resource — direct internet SSH is not part of the design
-- you share a Log Analytics workspace (in a separate shared resource group) with other participants for KQL exercises
-
-## Azure Cloud Shell first-time use
-
-Azure Cloud Shell is the easiest way to run Azure CLI commands directly from the Azure portal.
-
-### First-time Cloud Shell setup in the portal
-
-1. Sign in to the Azure portal.
-2. Select the `Cloud Shell` icon in the top navigation bar.
-3. Choose `Bash` when prompted.
-4. If this is your first time using Cloud Shell, Azure will ask you to create backing storage.
-5. Create the Cloud Shell storage in the subscription and region approved for your sandbox.
-6. Wait for the shell session to initialize.
-7. Run the following command to confirm the CLI is available:
-
-```bash
-az version --output table
-```
-
-### Important Cloud Shell notes
-
-- Cloud Shell creates supporting storage resources for the shell session.
-- Those Cloud Shell resources are separate from the lab resources.
-- If your organization has a preferred resource group for shared tooling, use that rather than your lab resource group.
-- If Cloud Shell is blocked by policy, you can run the same commands from a local Azure CLI installation.
-
-### Initial CLI setup commands
-
-Run these commands once at the start of the lab.
-
-```bash
-## To view your current subscription context.
-az account show --output table
-```
-
-If you need to change subscriptions:
-
-```bash
-## List subscriptions
-az account list --output table
-## Set the subscription to the identified sandbox subscription for this lab.
-az account set --subscription "<subscription-name-or-id>"
-az account show --output table
-```
-
-### Set your shell variables
-
-Use these commands to define the names used throughout the rest of the lab. Replace values if your assigned prefix is different.
-
-```bash
-userPrefix="userA"
-resourceGroupName="azure101lab-${userPrefix}-rg"
-vnetName="${userPrefix}-vnet"
-nsgName="${userPrefix}-nsg"
-routeTableName="${userPrefix}-rt"
-nicName="${userPrefix}-nic"
-vmName="${userPrefix}-vm"
-storageAccountName="${userPrefix}azure101labst"
-```
-
-Optional defaults for the current shell session:
-
-```bash
-az configure --defaults group=$resourceGroupName
-```
+- **VNet 1** (`10.10.0.0/16`) with a workload subnet and AzureBastionSubnet
+- **VNet 2** (`10.11.0.0/16`) with a workload subnet
+- VNet peering between VNet 1 and VNet 2
+- **VM1** in VNet 1 — Ubuntu 22.04, Standard_B1s (1 vCPU), 4 GB data disk
+- **VM2** in VNet 2 — Ubuntu 22.04, Standard_B1s, running a service on port 1433
+- **Azure Bastion** for SSH access to both VMs
+- **Storage account** with a `lab-data` blob container
+- **NSG per VNet** with custom deny rules blocking cross-VNet traffic
+- Both VMs report metrics and logs to a shared Log Analytics workspace
+- NSG flow logs are enabled and flow to Log Analytics
 
 ## Lab flow
 
-1. Orient yourself with the pre-deployed environment
-2. Troubleshoot the VM (includes RBAC discovery when a write action fails)
-3. Troubleshoot the network (NSG and routing)
-4. Gather evidence using Azure Monitor and KQL
-5. Review cost and policy compliance
-6. Discuss findings
+1. Module 1 — VM Performance
+2. Module 2 — Network Connectivity (NSG)
+3. Module 3 — Disk Capacity
+4. Module 4 — Azure Monitor & KQL Evidence
+5. Module 5 — Cost & Policy Compliance
+6. Module 6 — RBAC (Data Plane)
+7. Module 7 — Storage Access Audit
+8. Module 8 — Change Tracking
 
-Each module below includes an expandable solution and validation section. Try the task first, then expand the solution section only if you need confirmation, a recovery path, or additional Microsoft Learn references.
+Each module presents a **symptom** you can observe, an **objective** that defines what "fixed" means, and **references** to Microsoft Learn documentation.
 
 ---
 
@@ -144,599 +81,181 @@ Each module below includes an expandable solution and validation section. Try th
 
 ### Objective
 
-Understand the lab scope, your pre-deployed environment, and what you need to find and fix.
+Confirm your environment is accessible and familiarize yourself with the resource layout.
 
-### Tasks
-
-- confirm the resource group and your assigned user prefix with the proctor
-- open the Azure portal and navigate to the resource group
+- navigate to your resource group in the Azure portal
 - identify all resources deployed under your prefix
-- confirm you can access Azure Cloud Shell
-- identify where to find Activity Log, Access Control (IAM), Network Watcher, and Log Analytics
-- review the resource list and understand the relationships between VNet, subnets, NSG, route table, NIC, and VM
-
-### Success criteria
-
-- you know which resources are yours
-- you know what portal views you will use for troubleshooting
-- you have Cloud Shell or CLI ready
+- confirm you can access Azure Bastion to SSH into VM1 and VM2
+- locate the shared Log Analytics workspace
+- locate Activity Log, Access Control (IAM), Network Watcher, and Azure Monitor in the portal
 
 ---
 
-## Module 1 — VM Troubleshooting
+## Module 1 — VM Performance
 
-### Business symptom
+### Symptom
 
-A workload owner reports that the VM is not responding.
+Users report the application hosted on VM1 becomes unresponsive for approximately 10 minutes every hour. During these periods, the VM is extremely slow and connections time out.
 
 ### Objective
 
-Determine whether the issue is caused by VM state, guest configuration, permissions, or network access.
+Identify the root cause of the periodic performance degradation using Azure Monitor metrics. Remediate the issue so that the application remains responsive during peak load periods. Prove the fix by showing improved metrics after remediation.
 
-### Tasks
+### References
 
-- check VM power state and provisioning state
-- review the Activity Log for recent operations on the VM
-- attempt to remediate the VM state issue
-- if a write action fails, investigate why
-- inspect boot diagnostics if available
-- check extension status for failures
-- determine the remediation steps
-
-### Validation checks
-
-- identify the VM state issue
-- identify any permissions issues preventing remediation
-- identify any extension problems
-- explain the next remediation actions
-
-### Hints
-
-- Hint 1: Start with the VM Overview page — what does the power state say?
-- Hint 2: Check the Activity Log for operations that changed the VM state.
-- Hint 3: Try to fix the state — if you get a permissions error, investigate IAM.
-- Hint 4: After fixing the VM state, check the Extensions + applications blade.
-- Hint 5: This VM does not have a direct public IP. Use serial console, Run command, or boot diagnostics for guest-level investigation.
-
-### Useful CLI commands
-
-```bash
-# Check VM power state
-az vm get-instance-view \
-  --resource-group $resourceGroupName \
-  --name $vmName \
-  --query "instanceView.statuses[].{code:code, displayStatus:displayStatus}" \
-  --output table
-
-# Check VM details
-az vm show \
-  --resource-group $resourceGroupName \
-  --name $vmName \
-  --show-details \
-  --query "{name:name, powerState:powerState, provisioningState:provisioningState}" \
-  --output table
-
-# Start the VM
-az vm start \
-  --resource-group $resourceGroupName \
-  --name $vmName
-
-# Check your role assignments on the resource group
-az role assignment list \
-  --resource-group $resourceGroupName \
-  --assignee "$(az ad signed-in-user show --query id -o tsv)" \
-  --output table
-
-# List extensions
-az vm extension list \
-  --resource-group $resourceGroupName \
-  --vm-name $vmName \
-  --output table
-```
-
-<details>
-<summary>Show Module 1 solution and validation</summary>
-
-### What's wrong
-
-1. **The VM is deallocated.** The power state shows `VM deallocated`. It needs to be started.
-2. **You have Reader role.** When you try to start the VM, you get a permission denied error. Reader allows viewing resources but not modifying them.
-3. **A custom script extension has failed.** After the permissions issue is resolved and the VM is started, the `FailedCustomScript` extension is in a failed state.
-
-### Solution steps
-
-#### Part A — Discover the VM is deallocated
-
-1. Open the VM Overview page.
-2. Note the Power state: `VM deallocated`.
-3. Open the Activity Log for the VM, filter to the last few hours.
-4. Find the `Deallocate Virtual Machine` operation — this confirms something stopped the VM.
-
-#### Part B — RBAC discovery (sub-module)
-
-5. Attempt to start the VM from the Overview page or CLI (`az vm start`).
-6. You receive an error: **"You do not have permission"** or **"Authorization failed"**.
-7. Open **Access Control (IAM)** on the resource group.
-8. Click **View my access** or check **Role assignments**.
-9. See that your account has `Reader` assigned at the resource group scope.
-10. Recognize: **Reader = view only.** You need `Contributor` to modify resources.
-11. Check subscription scope — is there a higher-level assignment? (Likely not.)
-12. Document: the minimum fix is to assign `Contributor` at the resource group scope.
-13. **Notify your proctor** that you have identified the RBAC issue. The proctor will upgrade your access to Contributor.
-
-#### Part C — Fix the VM and extension
-
-14. After the proctor upgrades your access, start the VM from the Overview page or CLI (`az vm start`).
-15. After the VM starts, open Extensions + applications.
-16. Find `FailedCustomScript` in a failed state.
-17. Review the error message — the script path `/opt/nonexistent-setup-script.sh` does not exist.
-18. Remove the failed extension from the portal or CLI:
-
-```bash
-az vm extension delete \
-  --resource-group $resourceGroupName \
-  --vm-name $vmName \
-  --name FailedCustomScript
-```
-
-### Expected outcomes
-
-- you can distinguish a deallocated VM from a running one
-- you found evidence in the Activity Log of when and how the VM was stopped
-- you discovered that visibility does not equal authority — Reader role prevents write operations
-- you understand the difference between Reader, Contributor, and Owner roles
-- you understand scope hierarchy (resource, resource group, subscription) and inheritance
-- you identified a failed extension and understood it runs inside the guest OS
-- you understand that portal-native tools (boot diagnostics, Run command, serial console) are the management path when there is no public IP
-
-### Module completion check
-
-You are done with Module 1 when:
-
-- you identified the deallocate operation in the Activity Log
-- you identified Reader role as the cause of the permissions error
-- you documented the least-privilege fix (Contributor at resource group scope)
-- the proctor upgraded your access
-- the VM is running
-- you addressed the failed extension
-
-### Microsoft Learn references
-
-- Azure Virtual Machines monitoring data reference: https://learn.microsoft.com/azure/virtual-machines/monitor-vm-reference
-- Serial console for Linux virtual machines: https://learn.microsoft.com/troubleshoot/azure/virtual-machines/linux/serial-console-linux
-- Azure RBAC overview: https://learn.microsoft.com/azure/role-based-access-control/overview
-- Understand scope for Azure RBAC: https://learn.microsoft.com/azure/role-based-access-control/scope-overview
-- Troubleshoot Azure RBAC: https://learn.microsoft.com/azure/role-based-access-control/troubleshooting
-
-</details>
+- [Monitor Azure virtual machines](https://learn.microsoft.com/azure/virtual-machines/monitor-vm)
+- [Resize a virtual machine](https://learn.microsoft.com/azure/virtual-machines/resize-vm)
+- [Connect to a VM using Azure Bastion](https://learn.microsoft.com/azure/bastion/bastion-connect-vm-ssh-linux)
 
 ---
 
-## Module 2 — NSG / Subnet Validation
+## Module 2 — Network Connectivity (NSG)
 
-### Business symptom
+### Symptom
 
-After starting the VM, traffic is not reaching it as expected.
+VM1 cannot connect to the database service running on VM2. Attempts to reach VM2 on port 1433 from VM1 result in connection timeouts.
+
+You can reproduce this by connecting to VM1 via Bastion and testing connectivity:
+```bash
+nc -zv <VM2-private-IP> 1433 -w 5
+```
 
 ### Objective
 
-Validate whether the problem is caused by subnet design, NSG rules, or both.
+Establish connectivity between VM1 and VM2 on port 1433 by configuring the appropriate NSG rules. Both VMs are in separate VNets that are peered. Verify the connection works after your fix.
 
-### Tasks
+### References
 
-- confirm which subnet the VM NIC is using
-- review the NSG associated to the subnet
-- review NSG inbound and outbound rules
-- review effective security rules on the NIC
-- determine what is blocking traffic and fix it
-
-### Validation checks
-
-- identify the specific rule causing the issue
-- describe how to remediate it
-
-### Hints
-
-- Hint 1: Open the NSG and carefully read the inbound rules and their priorities.
-- Hint 2: Lower priority number = higher priority = evaluated first.
-- Hint 3: Check effective security rules on the NIC to see the combined enforced rules.
-- Hint 4: Compare custom rules to the default rules — which ones fire first?
-
-### Useful CLI commands
-
-```bash
-# Check subnet NSG association
-az network vnet subnet show \
-  --resource-group $resourceGroupName \
-  --vnet-name $vnetName \
-  --name "${userPrefix}-workload-snet" \
-  --query "{subnet:name, nsg:networkSecurityGroup.id}" \
-  --output jsonc
-
-# List NSG rules
-az network nsg rule list \
-  --resource-group $resourceGroupName \
-  --nsg-name $nsgName \
-  --output table
-
-# Show effective security rules
-az network nic show-effective-nsg \
-  --resource-group $resourceGroupName \
-  --name $nicName \
-  --output table
-```
-
-<details>
-<summary>Show Module 2 solution and validation</summary>
-
-### What's wrong
-
-The NSG has a **DenyAllInbound** rule at **priority 200**. This blocks all inbound traffic before any default allow rules (which start at priority 65000) can apply.
-
-### Solution steps
-
-1. Open the VM → Networking, or open the NIC directly.
-2. Confirm the NIC is in the workload subnet.
-3. Open the NSG (`<userPrefix>-nsg`).
-4. Review Inbound security rules.
-5. Find `DenyAllInbound` at priority 200 — this denies all inbound traffic from any source.
-6. Recognize that default rules like `AllowVnetInBound` (priority 65000) cannot override this because 200 < 65000.
-7. Fix: delete the `DenyAllInbound` rule, or add a more specific allow rule at a priority lower than 200 (e.g., 100).
-
-```bash
-# Delete the deny rule
-az network nsg rule delete \
-  --resource-group $resourceGroupName \
-  --nsg-name $nsgName \
-  --name DenyAllInbound
-```
-
-8. Verify effective security rules after the fix.
-
-### Expected outcomes
-
-- you understand NSG rule priority evaluation order
-- you can read effective security rules and compare to raw configuration
-- you can fix an overly broad deny rule
-
-### Module completion check
-
-You are done with Module 2 when:
-
-- you identified the blocking rule and its priority
-- you fixed the NSG configuration
-- you verified with effective security rules
-
-### Microsoft Learn references
-
-- Diagnose network traffic filtering problems: https://learn.microsoft.com/azure/virtual-network/diagnose-network-traffic-filter-problem
-- Network security groups overview: https://learn.microsoft.com/azure/virtual-network/network-security-groups-overview
-
-</details>
+- [Network security groups overview](https://learn.microsoft.com/azure/virtual-network/network-security-groups-overview)
+- [Diagnose VM network traffic filter problems](https://learn.microsoft.com/azure/virtual-network/diagnose-network-traffic-filter-problem)
+- [Virtual network peering](https://learn.microsoft.com/azure/virtual-network/virtual-network-peering-overview)
+- [Network Watcher overview](https://learn.microsoft.com/azure/network-watcher/network-watcher-overview)
 
 ---
 
-## Module 3 — Route Table / Routing
+## Module 3 — Disk Capacity
 
-### Business symptom
+### Symptom
 
-After fixing the NSG, the VM still cannot reach external destinations.
+You received an alert (or see a fired alert in Azure Monitor → Alerts) indicating that the data disk on VM1 is over 80% full. The application is at risk of running out of storage, which could cause data loss or service outages.
 
 ### Objective
 
-Determine whether the route table is causing the connectivity problem.
+Resize the data disk in Azure to a larger size, then extend the partition and filesystem inside the VM's operating system. Confirm that disk utilization has dropped below the alert threshold.
 
-### Tasks
+### References
 
-- review the effective routes on the VM NIC
-- review the route table associated to the workload subnet
-- identify any routes that drop or redirect traffic unexpectedly
-- remediate the routing issue
-
-### Validation checks
-
-- identify the problematic route
-- explain why the route causes the failure
-- confirm the fix
-
-### Hints
-
-- Hint 1: Check effective routes on the NIC — the source of truth for routing.
-- Hint 2: A custom route with next hop `None` drops traffic silently.
-- Hint 3: User-defined routes override system default routes.
-
-### Useful CLI commands
-
-```bash
-# Show effective routes on the NIC
-az network nic show-effective-route-table \
-  --resource-group $resourceGroupName \
-  --name $nicName \
-  --output table
-
-# Show route table configuration
-az network route-table route list \
-  --resource-group $resourceGroupName \
-  --route-table-name $routeTableName \
-  --output table
-```
-
-<details>
-<summary>Show Module 3 solution and validation</summary>
-
-### What's wrong
-
-The route table has a custom route `blackhole-default` with address prefix `0.0.0.0/0` and next hop type `None`. This drops all outbound traffic to the internet.
-
-### Solution steps
-
-1. Open the NIC → Effective routes.
-2. Find the route `0.0.0.0/0` with next hop `None`.
-3. Open the route table (`<userPrefix>-rt`).
-4. Find the `blackhole-default` route.
-5. Understand: `nextHopType: None` means the traffic is silently dropped.
-6. Delete the route:
-
-```bash
-az network route-table route delete \
-  --resource-group $resourceGroupName \
-  --route-table-name $routeTableName \
-  --name blackhole-default
-```
-
-7. Verify effective routes — `0.0.0.0/0` should now show the system default route with next hop `Internet`.
-
-### Expected outcomes
-
-- you understand that custom routes override system routes
-- you know what `None` next hop means
-- you can use effective routes to see actual routing behavior vs configuration
-
-### Module completion check
-
-You are done with Module 3 when:
-
-- you identified the blackhole route
-- you removed it
-- you verified effective routes show the correct default route
-
-### Microsoft Learn references
-
-- Diagnose virtual machine routing problems: https://learn.microsoft.com/troubleshoot/azure/virtual-network/diagnose-network-routing-problem
-- Manage route tables: https://learn.microsoft.com/azure/virtual-network/manage-route-table
-
-</details>
+- [Expand virtual hard disks on a Linux VM](https://learn.microsoft.com/azure/virtual-machines/linux/expand-disks)
+- [Azure managed disks overview](https://learn.microsoft.com/azure/virtual-machines/managed-disks-overview)
+- [Azure Monitor alerts overview](https://learn.microsoft.com/azure/azure-monitor/alerts/alerts-overview)
 
 ---
 
-## Module 4 — Azure Monitor and KQL Triage
+## Module 4 — Azure Monitor & KQL Evidence
 
-### Business symptom
+### Symptom
 
-The team needs evidence, not guesses, about what happened to this environment.
+Your manager requires documented, query-based evidence that the operational issues from Modules 1–3 have been identified and addressed. Verbal summaries are not sufficient — you need to produce KQL query results.
 
 ### Objective
 
-Use Azure monitoring data and KQL to find evidence of the issues you have already troubleshot.
+Using the shared Log Analytics workspace, produce KQL queries that show:
 
-### Tasks
+1. **CPU trend from Module 1** — the historical CPU spike pattern on VM1 before and after the resize
+2. **NSG flow log analysis from Module 2** — blocked traffic events between VM1 and VM2 before the NSG fix
+3. **Disk utilization from Module 3** — data disk capacity trend before and after the resize
+4. **DCR validation** — confirm that the Data Collection Rule is sending all expected data sources to Log Analytics
 
-- open the Activity Log for the resource group
-- identify operations related to the VM being stopped, the extension failure, and any changes you made
-- open the shared Log Analytics workspace
-- run KQL queries to surface relevant events
-- correlate log evidence to the issues you found in earlier modules
+### References
 
-### Sample KQL starter queries
-
-Use only the tables available in your environment.
-
-```kusto
-// Recent activity in the resource group
-AzureActivity
-| where TimeGenerated > ago(4h)
-| project TimeGenerated, OperationNameValue, ActivityStatusValue, Caller, ResourceGroup
-| order by TimeGenerated desc
-```
-
-```kusto
-// Failed operations
-AzureActivity
-| where TimeGenerated > ago(4h)
-| where ActivityStatusValue == "Failed" or ActivityStatusValue == "Failure"
-| project TimeGenerated, OperationNameValue, ActivityStatusValue, Properties
-```
-
-```kusto
-// VM heartbeat (may show gaps from deallocated period)
-Heartbeat
-| where TimeGenerated > ago(4h)
-| summarize LastSeen=max(TimeGenerated) by Computer
-```
-
-```kusto
-// Diagnostics if available
-AzureDiagnostics
-| where TimeGenerated > ago(4h)
-| take 50
-```
-
-### Validation checks
-
-- identify at least one useful query result
-- correlate log evidence to one of the earlier troubleshooting scenarios
-
-### Hints
-
-- Hint 1: Start with `AzureActivity` — it captures control plane operations like VM start, stop, and configuration changes.
-- Hint 2: Look for the VM deallocate event and any extension failure events.
-- Hint 3: Not every table exists in every environment. Use `search *` or check available tables first.
-
-<details>
-<summary>Show Module 4 solution and validation</summary>
-
-### What to find
-
-There is no new fault to discover. This module is about using monitoring tools to find evidence of the faults from earlier modules.
-
-### Solution steps
-
-1. Open Monitor → Activity Log or navigate to the resource group Activity Log.
-2. Filter to the last 4 hours and your resource group.
-3. Look for:
-   - `Deallocate Virtual Machine` — evidence of the VM being stopped
-   - Extension deployment operations — evidence of the failed custom script
-   - Any NSG or route table modifications — evidence of your own fixes
-4. Open the shared Log Analytics workspace.
-5. Run the AzureActivity query to see all operations.
-6. Run the failed operations query to find failures.
-7. Run the Heartbeat query — if the VM has been running, you should see a recent heartbeat. Gaps indicate when the VM was down.
-8. Correlate timestamps between events.
-
-### Expected outcomes
-
-- you identify the VM deallocate event with timestamp and caller
-- you find extension failure events
-- you run at least one useful KQL query
-- you connect evidence to fault domains rather than guessing
-
-### Module completion check
-
-You are done with Module 4 when:
-
-- you used Activity Log or KQL to find evidence of at least two earlier faults
-- you can explain what happened and when
-
-### Microsoft Learn references
-
-- Azure Activity Log overview: https://learn.microsoft.com/azure/azure-monitor/essentials/activity-log
-- Log queries in Azure Monitor: https://learn.microsoft.com/azure/azure-monitor/logs/log-query-overview
-- Kusto query language overview: https://learn.microsoft.com/azure/data-explorer/kusto/query/
-
-</details>
+- [Log queries in Azure Monitor](https://learn.microsoft.com/azure/azure-monitor/logs/log-query-overview)
+- [KQL quick reference](https://learn.microsoft.com/azure/data-explorer/kusto/query/kql-quick-reference)
+- [Azure Monitor Logs overview](https://learn.microsoft.com/azure/azure-monitor/logs/data-platform-logs)
+- [Traffic Analytics](https://learn.microsoft.com/azure/network-watcher/traffic-analytics)
 
 ---
 
-## Module 5 — Cost and Policy Validation
+## Module 5 — Cost & Policy Compliance
 
-### Business symptom
+### Symptom
 
-The team wants to know whether this environment is compliant and cost-aware.
+When attempting to deploy a new resource, the deployment may fail or produce compliance warnings related to missing tags. Additionally, management has requested a cost report for the lab subscription to understand current spending.
+
+Navigate to **Azure Policy → Compliance** in the portal and observe the non-compliant resource count. Also check the tags on your resources.
 
 ### Objective
 
-Audit the environment for governance compliance, review cost information at the subscription and resource group level, and identify resources that generate cost even when not actively in use.
+1. Identify all resources in your resource group that are non-compliant with tag policies and apply the required `Department` and `Environment` tags.
+2. Generate an Azure Cost Management report showing actual spend in the last 7 days, grouped by tag, at the subscription scope.
+3. Review the subscription budget and confirm alerts are configured.
 
-### Tasks
+### References
 
-- your organization requires that all resources have a `Department` tag and an `Environment` tag — verify whether each resource in your resource group has these tags applied
-- in production environments, Azure Policy is commonly used to audit and remediate missing tags automatically — check whether any policy assignments flag non-compliant resources
-- navigate to the **Subscriptions** blade in the Azure portal, open your lab subscription, and review the overview page to see the subscription-level cost summary and resource counts
-- open your resource group and navigate to **Cost analysis** (under Cost Management in the left menu) to view accumulated costs at the resource group level
-- group costs by resource type or resource name to identify which resources are generating cost
-- identify what costs money even when the VM is deallocated (think about disks, storage accounts, and shared services)
-- navigate to **Budgets** (under Cost Management) to check whether any budgets have been assigned to the subscription or resource group, and understand how budgets can be used to set spending thresholds and alerts
-- review SKUs and sizing decisions and document what should be cleaned up or changed
+- [Azure Policy overview](https://learn.microsoft.com/azure/governance/policy/overview)
+- [Quickstart: Explore and analyze costs](https://learn.microsoft.com/azure/cost-management-billing/costs/quick-acm-cost-analysis)
+- [Tutorial: Create and manage Azure budgets](https://learn.microsoft.com/azure/cost-management-billing/costs/tutorial-acm-create-budgets)
 
-> **Note:** This lab environment was recently deployed, so costs may appear minimal or show as $0.00. The goal of this module is to learn *where* to monitor costs and manage budgets, not to analyze exact dollar amounts.
+---
 
-### Validation checks
+## Module 6 — RBAC (Data Plane)
 
-- identify at least one governance concern (missing tags)
-- identify at least one cost concern (resources that incur cost even when the VM is deallocated)
-- identify where to view subscription-level cost information
-- identify where to view resource group-level cost breakdowns and budgets
+### Symptom
 
-### Hints
+You need to upload a configuration file to the storage account's `lab-data` blob container. When you attempt to upload via the Azure portal or CLI, you receive an error:
 
-- Hint 1: Check the **Tags** blade on your resources. Look specifically for `Department` and `Environment` tags.
-- Hint 2: A deallocated VM does not mean free — what else costs money?
-- Hint 3: Check **Policy → Compliance** views if available.
-- Hint 4: Open the **Subscriptions** blade to find the subscription-level cost summary.
-- Hint 5: Open your resource group → **Cost analysis** to see resource-level cost breakdowns. Try grouping by resource type.
-- Hint 6: Check **Cost Management → Budgets** to see if any spending thresholds have been configured.
+> **AuthorizationPermissionMismatch (403)**  
+> "This request is not authorized to perform this operation using this permission."
 
-<details>
-<summary>Show Module 5 solution and validation</summary>
+### Objective
 
-### What's wrong
+Identify why your Contributor role is insufficient for blob data operations. Assign the correct data-plane role to yourself on the storage account and successfully upload a file to the `lab-data` container.
 
-1. **Resources have no tags.** All resources are missing the required `Department` and `Environment` tags. In production, Azure Policy with audit or remediate effects is the standard way to enforce tag compliance at scale.
-2. **Cost items persist even with a deallocated VM.** The managed OS disk and storage account incur costs whether the VM is running or not.
+### References
 
-### Solution steps
+- [Azure built-in roles](https://learn.microsoft.com/azure/role-based-access-control/built-in-roles)
+- [Authorize access to blob data in the Azure portal](https://learn.microsoft.com/azure/storage/blobs/authorize-data-operations-portal)
+- [Assign Azure roles using the portal](https://learn.microsoft.com/azure/role-based-access-control/role-assignments-portal)
 
-#### Tag audit
+---
 
-1. Open any resource in your prefix → **Tags** → Notice no tags are applied.
-2. Check multiple resources in your resource group — none have `Department` or `Environment` tags.
-3. If Azure Policy is configured, open **Policy → Compliance** and look for non-compliant resources flagged for missing tags.
-4. In production, tags would typically be enforced through Azure Policy with an **Audit** effect (flag non-compliance) or a **Modify/DeployIfNotExists** effect (automatically remediate missing tags).
+## Module 7 — Storage Access Audit
 
-Optionally, you can apply tags manually using the CLI:
+### Symptom
 
-```bash
-# Apply tags to a resource (replace <sub-id> with your subscription ID)
-az tag update \
-  --resource-id "/subscriptions/<sub-id>/resourceGroups/$resourceGroupName/providers/Microsoft.Compute/virtualMachines/$vmName" \
-  --operation merge \
-  --tags Department=Lab Environment=Training
-```
+The security team has flagged suspicious access patterns on the storage account's blob containers. They need an investigation report showing who has been accessing files, what operations were performed, and from which IP addresses.
 
-#### Subscription cost overview
+### Objective
 
-5. In the Azure portal, search for **Subscriptions** in the top search bar or select it from the left navigation.
-6. Select the lab subscription.
-7. The subscription overview page displays a cost summary, including the current billing period spend and resource counts. Since the lab was recently deployed, the amounts may be minimal.
+Using the shared Log Analytics workspace, query the `StorageBlobLogs` table to identify all callers who accessed the storage account's blob data. Report the principal identities, operation types, IP addresses, and timestamps.
 
-#### Resource group cost analysis
+### References
 
-8. Navigate to your resource group in the Azure portal.
-9. In the left menu, select **Cost analysis** (under Cost Management).
-10. The default view shows accumulated costs over time. Use the **Group by** dropdown to group by **Resource type** or **Resource** to see which services drive cost.
-11. Identify cost-bearing items even when the VM is deallocated:
-    - **Managed OS disk** — billed as long as the disk exists, regardless of VM state
-    - **Storage account** — billed even if empty (capacity, transactions, and redundancy charges)
-    - **Log Analytics workspace** — shared ingestion cost
-12. Try switching between the **Accumulated cost** and **Daily cost** views to see how charges accrue.
+- [Monitor Azure Blob Storage](https://learn.microsoft.com/azure/storage/blobs/monitor-blob-storage)
+- [StorageBlobLogs schema](https://learn.microsoft.com/azure/azure-monitor/reference/tables/storageblobreadalogs)
+- [Azure Monitor diagnostic settings](https://learn.microsoft.com/azure/azure-monitor/essentials/diagnostic-settings)
 
-#### Budgets
+---
 
-13. In the left menu under Cost Management, select **Budgets**.
-14. Review any existing budgets assigned to the subscription or resource group. If none exist, note this as a governance gap.
-15. Understand that budgets allow you to set monthly or quarterly spending thresholds and configure alerts (e.g., email notifications at 80% and 100% of budget).
+## Module 8 — Change Tracking
 
-16. Document what resources could be cleaned up or downsized after the lab.
+### Symptom
 
-### Expected outcomes
+An auditor has requested a report of all infrastructure changes made during the lab session. They need evidence of what resources were changed, who made the changes, and when they occurred.
 
-- you identify missing `Department` and `Environment` tags as a governance concern
-- you understand that Azure Policy is used to audit and remediate tag compliance at scale
-- you know how to view subscription-level cost information from the Subscriptions blade
-- you know how to use Cost Management → Cost analysis to view resource group cost breakdowns
-- you understand that deallocated VMs still have cost (disk, storage)
-- you know where to find and manage budgets for spending thresholds and alerts
-- you can identify cleanup candidates
+### Objective
 
-### Module completion check
+Using Azure Activity Logs and Azure Resource Graph, document the infrastructure changes you made during the lab. Your report should include:
 
-You are done with Module 5 when:
+1. VM resize event (Module 1)
+2. NSG rule modifications (Module 2)
+3. Disk resize operation (Module 3)
+4. Role assignment change (Module 6)
 
-- you identified the missing `Department` and `Environment` tags as a governance concern
-- you reviewed the subscription overview for cost summary information
-- you used Cost Management → Cost analysis to view costs at the resource group level
-- you identified at least one cost concern (resources billed even when the VM is deallocated)
-- you checked the Budgets section and understand how budgets manage spending thresholds
-- you documented cleanup recommendations
+### References
 
-### Microsoft Learn references
-
-- Azure Policy overview: https://learn.microsoft.com/azure/governance/policy/overview
-- Microsoft Cost Management: https://learn.microsoft.com/azure/cost-management-billing/
-- Quickstart — Explore and analyze costs with cost analysis: https://learn.microsoft.com/azure/cost-management-billing/costs/quick-acm-cost-analysis
-- Tutorial — Create and manage Azure budgets: https://learn.microsoft.com/azure/cost-management-billing/costs/tutorial-acm-create-budgets
-
-</details>
+- [Azure Activity Log](https://learn.microsoft.com/azure/azure-monitor/essentials/activity-log)
+- [Azure Resource Graph overview](https://learn.microsoft.com/azure/governance/resource-graph/overview)
+- [Azure Change Analysis](https://learn.microsoft.com/azure/azure-monitor/change/change-analysis)
 
 ---
 
@@ -744,23 +263,12 @@ You are done with Module 5 when:
 
 For each module, record:
 
-- the symptom
-- the tools you used (portal, CLI, or both)
+- the symptom you observed
+- the tools and queries you used
 - the evidence you found
 - the root cause
 - the remediation you applied
-
-## Microsoft Learn references
-
-- Get started with Azure Cloud Shell: https://learn.microsoft.com/azure/cloud-shell/quickstart
-- Azure Cloud Shell overview: https://learn.microsoft.com/azure/cloud-shell/overview
-- Prepare your environment for the Azure CLI: https://learn.microsoft.com/cli/azure/get-started-tutorial-1-prepare-environment
-- Network security groups overview: https://learn.microsoft.com/azure/virtual-network/network-security-groups-overview
-- Manage route tables: https://learn.microsoft.com/azure/virtual-network/manage-route-table
-- Storage account overview: https://learn.microsoft.com/azure/storage/common/storage-account-overview
-- Azure RBAC overview: https://learn.microsoft.com/azure/role-based-access-control/overview
-- Azure Policy overview: https://learn.microsoft.com/azure/governance/policy/overview
-- Log queries in Azure Monitor: https://learn.microsoft.com/azure/azure-monitor/logs/log-query-overview
+- the proof that the fix worked
 
 ## Teardown
 

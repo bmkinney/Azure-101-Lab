@@ -4,109 +4,162 @@
 
 All scenarios are pre-deployed in the lab environment via Bicep. Students do not build infrastructure — they troubleshoot it.
 
-Each scenario reinforces operational thinking:
-- identify the symptom
-- gather evidence
-- isolate the fault domain
-- recommend or perform remediation
+Each scenario presents:
+- an **observable symptom** the student can reproduce
+- a clear **objective** defining what "fixed" looks like
+- **references** to Microsoft Learn documentation (no step-by-step hints)
 
-## Scenario 1 — VM Troubleshooting + RBAC Discovery
+Students work in groups of 3, sharing one subscription and one resource group. Each group collaborates in a breakout room on the same set of resources.
 
-### Focus area
-VM state, extension troubleshooting, and RBAC discovery
-
-### Pre-deployed faults
-- VM is in a **deallocated** state
-- Students have **Reader** role on their resource group (insufficient to start the VM)
-- Custom Script Extension has **failed** (attempts to run a non-existent script)
-
-### Participant outcome
-The participant identifies the VM is deallocated, attempts to start it, discovers the Reader role prevents write operations, gets upgraded to Contributor by the proctor, starts the VM, and addresses the failed extension.
-
-### Evidence sources
-- VM Overview (power state, provisioning state)
-- Activity Log (deallocate operation)
-- Permission denied error when attempting to start the VM
-- Access Control (IAM) on the student's resource group (role assignments)
-- Extensions + applications blade (failed extension status)
-- Boot diagnostics
-
-## Scenario 2 — NSG / Subnet Validation
+## Scenario 1 — VM Performance
 
 ### Focus area
-Network security group rule analysis
+VM monitoring, metrics analysis, and compute right-sizing
 
 ### Pre-deployed fault
-- NSG contains a **DenyAllInbound** rule at **priority 200** that blocks all inbound traffic
+- A cron job on VM1 runs `stress --cpu 1` for 10 minutes every hour, pegging 1 vCPU at 100%
+- VM1 is `Standard_B1s` (1 vCPU) — completely saturated during spike
 
 ### Participant outcome
-The participant identifies the deny rule, understands priority evaluation, and removes or overrides the rule.
+The participant identifies the periodic CPU spike using Azure Monitor metrics, connects via Bastion to observe the process, and resizes the VM to 2+ vCPU so the spike only consumes ≤50% CPU.
 
 ### Evidence sources
-- NSG inbound rules
-- Effective security rules on the NIC
-- Subnet association confirmation
+- Azure Monitor → Metrics (Percentage CPU on VM1)
+- Bastion SSH → `top` or `htop` to see `stress` process
+- VM size comparison before and after resize
 
-## Scenario 3 — Route Table / Routing
+## Scenario 2 — Network Connectivity (NSG)
 
 ### Focus area
-Routing validation
+NSG rule analysis, cross-VNet troubleshooting, Network Watcher tools
 
 ### Pre-deployed fault
-- Route table contains a **blackhole route** (`0.0.0.0/0 → None`) that drops all outbound traffic
+- Two VNets are peered, each with its own NSG
+- No custom allow rules exist — custom deny rules on each NSG block cross-VNet traffic, so SQL (port 1433) between VM1 and VM2 fails
+- VM2 runs a TCP listener on port 1433 (simulates SQL)
 
 ### Participant outcome
-The participant identifies the blackhole route using effective routes and removes it.
+The participant tests connectivity from VM1 to VM2 on port 1433 (fails), identifies that NSG rules are needed on both sides, adds allow rules, and verifies connectivity.
 
 ### Evidence sources
-- Effective routes on the NIC
-- Route table configuration
-- Subnet association
+- `nc -zv <VM2-IP> 1433` from VM1 via Bastion
+- NSG rule review on both NSG1 and NSG2
+- Effective security rules on both NICs
+- Network Watcher NSG diagnostics
 
-## Scenario 4 — Azure Monitor and KQL Triage
+## Scenario 3 — Disk Capacity
 
 ### Focus area
-Operational evidence and log analysis
+Azure disk management, Linux filesystem administration, Azure Monitor alerts
 
 ### Pre-deployed fault
-- None — this scenario uses monitoring to find evidence of faults from Scenarios 1-3
+- VM1 has a 4 GB data disk mounted at `/mnt/data`
+- The disk is filled to >80% with a large file (`app-logs.dat`)
+- An Azure Monitor metric alert fires on disk usage >80%
 
 ### Participant outcome
-The participant uses Activity Log and KQL to surface VM stop events, extension failures, and configuration changes.
+The participant receives or observes the disk alert, resizes the disk in Azure, extends the partition and filesystem inside the OS via Bastion, and confirms utilization drops below threshold.
+
+### Evidence sources
+- Azure Monitor → Alerts (fired disk alert)
+- Bastion SSH → `df -h /mnt/data`
+- Disk properties in the portal (size change)
+- Post-resize `df -h` showing reduced utilization
+
+## Scenario 4 — Azure Monitor & KQL Evidence
+
+### Focus area
+Log Analytics, KQL queries, operational evidence gathering
+
+### Pre-deployed fault
+- None — this scenario uses monitoring data to provide evidence of Scenarios 1-3
+
+### Participant outcome
+The participant writes KQL queries showing CPU spike trends, NSG flow log blocks, disk utilization, and validates the DCR is collecting all expected telemetry.
+
+### Evidence sources
+- Perf table (CPU and disk metrics)
+- AzureNetworkAnalytics_CL (NSG flow log denied traffic)
+- Heartbeat table (VM availability)
+- DCR configuration review
+
+## Scenario 5 — Cost & Policy Compliance
+
+### Focus area
+Azure Policy, tag governance, Cost Management, budgets
+
+### Pre-deployed fault
+- All resources are missing required `Department` and `Environment` tags
+- Azure Policy (Audit effect) is assigned at subscription scope flagging non-compliance
+- A subscription budget ($50/month) is deployed with alert thresholds
+
+### Participant outcome
+The participant identifies non-compliant resources via Azure Policy, applies the required tags, generates an ACM cost report by tag, and reviews the budget configuration.
+
+### Evidence sources
+- Azure Policy → Compliance (non-compliant resource count)
+- Resource Tags blade
+- Cost Management → Cost analysis (grouped by tag)
+- Cost Management → Budgets
+
+## Scenario 6 — RBAC (Data Plane)
+
+### Focus area
+Control-plane vs data-plane RBAC, storage blob access
+
+### Pre-deployed fault
+- Students have Contributor role (control plane) but NOT `Storage Blob Data Contributor` (data plane)
+- A blob container `lab-data` exists with a pre-uploaded test file
+
+### Participant outcome
+The participant attempts a blob upload (gets 403), discovers the control-plane vs data-plane distinction, assigns `Storage Blob Data Contributor` to themselves on the storage account, and uploads successfully.
+
+### Evidence sources
+- 403 error on blob upload attempt
+- IAM role assignment review
+- Successful blob upload after role assignment
+
+## Scenario 7 — Storage Access Audit
+
+### Focus area
+Storage diagnostic logging, KQL investigation, security audit
+
+### Pre-deployed fault
+- Storage account diagnostic settings send `StorageBlobLogs` to Log Analytics
+- Prior blob access events exist from fault injection and Module 6 activities
+
+### Participant outcome
+The participant queries `StorageBlobLogs` in Log Analytics to identify who accessed blob storage, what operations were performed, and from which IP addresses.
+
+### Evidence sources
+- StorageBlobLogs table in Log Analytics
+- KQL queries identifying callers by principal ID and IP
+
+## Scenario 8 — Change Tracking
+
+### Focus area
+Activity Logs, Azure Resource Graph, change auditing
+
+### Pre-deployed fault
+- None — this scenario builds on real changes made during Scenarios 1-6
+
+### Participant outcome
+The participant uses Activity Logs and Resource Graph to document infrastructure changes: VM resize, NSG rule additions, disk resize, and role assignments. They produce an audit trail with timestamps and callers.
 
 ### Evidence sources
 - AzureActivity table (control plane operations)
-- Heartbeat table (VM availability gaps)
-- AzureDiagnostics (if available)
-- Shared Log Analytics workspace
+- Azure Resource Graph → `resourcechanges` table
+- Activity Log in the portal
 
-## Scenario 5 — Cost and Policy Validation
+## Recommended sequence
 
-### Focus area
-Governance and operational hygiene
+1. VM Performance (Module 1)
+2. Network Connectivity — NSG (Module 2)
+3. Disk Capacity (Module 3)
+4. Azure Monitor & KQL Evidence (Module 4)
+5. Cost & Policy Compliance (Module 5)
+6. RBAC — Data Plane (Module 6)
+7. Storage Access Audit (Module 7)
+8. Change Tracking (Module 8)
 
-### Pre-deployed fault
-- Resources are missing required tags (`Department`, `Environment`)
-- Deallocated VMs still incur disk costs
-
-### Participant outcome
-The participant identifies missing `Department` and `Environment` tags, reviews subscription-level and resource group-level cost information using Cost Management, recognizes persistent costs even with deallocated VMs, checks budgets, and reviews policy compliance.
-
-### Evidence sources
-- Resource Tags blade (`Department` and `Environment` tags missing)
-- Policy compliance views (if policy is configured)
-- Subscription overview (cost summary and resource counts)
-- Cost Management → Cost analysis (resource group scope, grouped by resource type)
-- Cost Management → Budgets (spending thresholds and alerts)
-- Resource inventory review
-- SKU and sizing review
-
-## Recommended scenario sequence
-
-1. VM Troubleshooting + RBAC Discovery (discover deallocated VM, hit permission denied, identify Reader role, get upgraded to Contributor, start VM, fix extension)
-2. NSG / Subnet Validation (fix the deny rule)
-3. Route Table / Routing (fix the blackhole route)
-4. Azure Monitor and KQL (gather evidence of all previous faults)
-5. Cost and Policy Validation (identify missing tags, cost concerns)
-
-This sequence is intentional: RBAC surfaces naturally in Scenario 1 when students try to start the VM. Once upgraded to Contributor, students can fix infrastructure and then use monitoring to find evidence.
+Modules 1-3 create the operational evidence that Modules 4 and 8 rely on. Module 6 creates the access needed for Module 7.

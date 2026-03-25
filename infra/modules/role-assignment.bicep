@@ -1,5 +1,5 @@
 // role-assignment.bicep - Generic role assignment module
-// Reused for both managed identity (Contributor) and student (Reader) role assignments
+// Reused for both managed identity (Contributor) and student (Contributor) role assignments
 
 @description('Principal ID (object ID) to assign the role to.')
 param principalId string
