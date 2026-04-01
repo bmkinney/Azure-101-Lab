@@ -35,6 +35,9 @@ param logAnalyticsWorkspaceId string
 @description('Contact email for metric alert notifications. Leave empty to skip alerts.')
 param alertEmail string = ''
 
+@description('VM size for both lab VMs. Must be 1 vCPU for Module 1 CPU spike scenario.')
+param vmSize string = 'Standard_B1s'
+
 // --- Naming ---
 var vnet1Name = '${labName}-vnet1'
 var vnet2Name = '${labName}-vnet2'
@@ -348,7 +351,7 @@ resource storageBlobDiag 'Microsoft.Insights/diagnosticSettings@2021-05-01-previ
 
 // ============================================================
 // VIRTUAL MACHINE 1 — Workload VM
-// Ubuntu 22.04 LTS, Standard_B1s (1 vCPU — undersized for CPU spike)
+// Ubuntu 22.04 LTS (1 vCPU — undersized for CPU spike)
 // FAULT: CPU spike injected post-deploy (Module 1)
 // FAULT: 4 GB data disk filled to >80% (Module 3)
 // ============================================================
@@ -358,7 +361,7 @@ resource vm1 'Microsoft.Compute/virtualMachines@2024-07-01' = {
   location: location
   properties: {
     hardwareProfile: {
-      vmSize: 'Standard_B1s'
+      vmSize: vmSize
     }
     osProfile: {
       computerName: vm1Name
@@ -411,7 +414,7 @@ resource vm1 'Microsoft.Compute/virtualMachines@2024-07-01' = {
 
 // ============================================================
 // VIRTUAL MACHINE 2 — Database/Service VM
-// Ubuntu 22.04 LTS, Standard_B1s
+// Ubuntu 22.04 LTS
 // Runs a TCP listener on port 1433 (simulates SQL service)
 // Configured via CustomScript extension at deploy time
 // ============================================================
@@ -421,7 +424,7 @@ resource vm2 'Microsoft.Compute/virtualMachines@2024-07-01' = {
   location: location
   properties: {
     hardwareProfile: {
-      vmSize: 'Standard_B1s'
+      vmSize: vmSize
     }
     osProfile: {
       computerName: vm2Name

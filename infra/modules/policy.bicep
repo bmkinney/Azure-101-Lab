@@ -19,7 +19,7 @@ resource auditDepartmentTag 'Microsoft.Authorization/policyAssignments@2024-04-0
   properties: {
     displayName: 'Audit resources missing Department tag'
     description: 'Audits any resource that does not have a Department tag applied.'
-    policyDefinitionId: subscriptionResourceId(
+    policyDefinitionId: tenantResourceId(
       'Microsoft.Authorization/policyDefinitions',
       '871b6d14-10aa-478d-b466-ce391a7bc4db'
     )
@@ -38,7 +38,7 @@ resource auditEnvironmentTag 'Microsoft.Authorization/policyAssignments@2024-04-
   properties: {
     displayName: 'Audit resources missing Environment tag'
     description: 'Audits any resource that does not have an Environment tag applied.'
-    policyDefinitionId: subscriptionResourceId(
+    policyDefinitionId: tenantResourceId(
       'Microsoft.Authorization/policyDefinitions',
       '871b6d14-10aa-478d-b466-ce391a7bc4db'
     )

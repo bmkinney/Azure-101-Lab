@@ -41,6 +41,9 @@ param alertEmail string = ''
 @description('Budget start date (first of current month). Auto-generated - do not override.')
 param budgetStartDate string = '${substring(utcNow('yyyy-MM-dd'), 0, 8)}01'
 
+@description('VM size for lab VMs. Must be 1 vCPU for Module 1 CPU spike scenario. Change if SKU is unavailable in your region.')
+param vmSize string = 'Standard_B1s'
+
 // ============================================================
 // RESOURCE GROUPS
 // ============================================================
@@ -160,6 +163,7 @@ module labEnvironment 'modules/user-environment.bicep' = {
     dataCollectionRuleId: shared.outputs.dataCollectionRuleId
     logAnalyticsWorkspaceId: shared.outputs.logAnalyticsWorkspaceId
     alertEmail: alertEmail
+    vmSize: vmSize
   }
 }
 
