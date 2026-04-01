@@ -38,6 +38,9 @@ param studentPrincipalType string = 'Group'
 @description('Contact email for budget and metric alert notifications.')
 param alertEmail string = ''
 
+@description('Budget start date (first of current month). Auto-generated - do not override.')
+param budgetStartDate string = '${substring(utcNow('yyyy-MM-dd'), 0, 8)}01'
+
 // ============================================================
 // RESOURCE GROUPS
 // ============================================================
@@ -86,7 +89,7 @@ resource labBudget 'Microsoft.Consumption/budgets@2023-11-01' = if (!empty(alert
   name: '${labName}-monthly-budget'
   properties: {
     timePeriod: {
-      startDate: '${substring(utcNow('yyyy-MM-dd'), 0, 8)}01' // first of current month
+      startDate: budgetStartDate
     }
     timeGrain: 'Monthly'
     amount: 50
@@ -111,7 +114,7 @@ resource labBudget 'Microsoft.Consumption/budgets@2023-11-01' = if (!empty(alert
 }
 
 // ============================================================
-// ACTIVITY LOG → Log Analytics diagnostic setting
+// ACTIVITY LOG -> Log Analytics diagnostic setting
 // Forwards subscription Activity Log to the shared workspace for KQL queries
 // ============================================================
 
@@ -126,7 +129,7 @@ resource activityLogDiag 'Microsoft.Insights/diagnosticSettings@2021-05-01-previ
 }
 
 // ============================================================
-// RBAC: Managed identity → Contributor on lab RG
+// RBAC: Managed identity -> Contributor on lab RG
 // Required for the fault-injection script to configure VMs
 // ============================================================
 
@@ -177,7 +180,7 @@ module faultInjection 'modules/fault-injection.bicep' = {
     subscriptionId: subscription().subscriptionId
     armEndpoint: environment().resourceManager
   }
-  dependsOn: [labEnvironment, identityRole]
+  dependsOn: [identityRole]
 }
 
 // ============================================================
