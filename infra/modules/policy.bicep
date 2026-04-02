@@ -1,6 +1,7 @@
 // policy.bicep - Azure Policy assignments for tag enforcement
 // Scope: subscription (deployed from main.bicep)
-// Effect: Audit — students can observe non-compliance without being blocked
+// Uses the built-in "Require a tag on resources" policy (Deny effect) with
+// enforcementMode = DoNotEnforce so it audits without blocking deployments.
 //
 // Module 5 fault: Resources are missing required tags. Students must identify
 // non-compliant resources via Policy > Compliance and apply tags.
@@ -11,7 +12,8 @@ targetScope = 'subscription'
 param location string
 
 // --- Built-in Policy: "Require a tag on resources" ---
-// Policy Definition ID: 871b6d14-10aa-478d-b466-ce391a7bc4db
+// Policy Definition ID: 96670d01-0a4d-4649-9c89-2d3abc0a5025
+// Effect: Deny (set enforcementMode to DoNotEnforce for audit-only behaviour)
 
 resource auditDepartmentTag 'Microsoft.Authorization/policyAssignments@2024-04-01' = {
   name: 'audit-department-tag'
@@ -21,14 +23,14 @@ resource auditDepartmentTag 'Microsoft.Authorization/policyAssignments@2024-04-0
     description: 'Audits any resource that does not have a Department tag applied.'
     policyDefinitionId: tenantResourceId(
       'Microsoft.Authorization/policyDefinitions',
-      '871b6d14-10aa-478d-b466-ce391a7bc4db'
+      '96670d01-0a4d-4649-9c89-2d3abc0a5025'
     )
     parameters: {
       tagName: {
         value: 'Department'
       }
     }
-    enforcementMode: 'Default'
+    enforcementMode: 'DoNotEnforce'
   }
 }
 
@@ -40,13 +42,13 @@ resource auditEnvironmentTag 'Microsoft.Authorization/policyAssignments@2024-04-
     description: 'Audits any resource that does not have an Environment tag applied.'
     policyDefinitionId: tenantResourceId(
       'Microsoft.Authorization/policyDefinitions',
-      '871b6d14-10aa-478d-b466-ce391a7bc4db'
+      '96670d01-0a4d-4649-9c89-2d3abc0a5025'
     )
     parameters: {
       tagName: {
         value: 'Environment'
       }
     }
-    enforcementMode: 'Default'
+    enforcementMode: 'DoNotEnforce'
   }
 }

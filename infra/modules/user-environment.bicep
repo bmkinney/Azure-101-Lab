@@ -529,61 +529,6 @@ resource dcr2 'Microsoft.Insights/dataCollectionRuleAssociations@2023-03-11' = {
 }
 
 // ============================================================
-// NSG FLOW LOGS → Log Analytics (Module 2 / Module 4)
-// Requires Network Watcher (auto-created by Azure per region)
-// ============================================================
-
-resource nsg1FlowLog 'Microsoft.Network/networkWatchers/flowLogs@2024-01-01' = {
-  name: 'NetworkWatcher_${location}/${nsg1Name}-flowlog'
-  location: location
-  properties: {
-    targetResourceId: nsg1.id
-    storageId: storageAccount.id
-    enabled: true
-    retentionPolicy: {
-      enabled: true
-      days: 7
-    }
-    format: {
-      type: 'JSON'
-      version: 2
-    }
-    flowAnalyticsConfiguration: {
-      networkWatcherFlowAnalyticsConfiguration: {
-        enabled: true
-        workspaceResourceId: logAnalyticsWorkspaceId
-        trafficAnalyticsInterval: 10
-      }
-    }
-  }
-}
-
-resource nsg2FlowLog 'Microsoft.Network/networkWatchers/flowLogs@2024-01-01' = {
-  name: 'NetworkWatcher_${location}/${nsg2Name}-flowlog'
-  location: location
-  properties: {
-    targetResourceId: nsg2.id
-    storageId: storageAccount.id
-    enabled: true
-    retentionPolicy: {
-      enabled: true
-      days: 7
-    }
-    format: {
-      type: 'JSON'
-      version: 2
-    }
-    flowAnalyticsConfiguration: {
-      networkWatcherFlowAnalyticsConfiguration: {
-        enabled: true
-        workspaceResourceId: logAnalyticsWorkspaceId
-        trafficAnalyticsInterval: 10
-      }
-    }
-  }
-}
-
-// ============================================================
 // METRIC ALERT: Data disk usage on VM1 (Module 3)
 // Fires when data disk used percentage > 80%
 // ============================================================
@@ -648,5 +593,10 @@ output vm2ResourceId string = vm2.id
 output vm1PrivateIp string = nic1.properties.ipConfigurations[0].properties.privateIPAddress
 output vm2PrivateIp string = nic2.properties.ipConfigurations[0].properties.privateIPAddress
 output storageAccountName string = storageAccount.name
+output storageAccountId string = storageAccount.id
+output nsg1Id string = nsg1.id
+output nsg1Name string = nsg1.name
+output nsg2Id string = nsg2.id
+output nsg2Name string = nsg2.name
 output vnet1AddressSpace string = vnet1AddressSpace
 output vnet2AddressSpace string = vnet2AddressSpace

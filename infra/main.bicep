@@ -188,6 +188,30 @@ module faultInjection 'modules/fault-injection.bicep' = {
 }
 
 // ============================================================
+// NSG FLOW LOGS (in NetworkWatcherRG)
+// Network Watcher auto-creates there; flow logs must be children of it.
+// Prerequisite: az network watcher configure --locations <region> --enabled true
+// ============================================================
+
+resource networkWatcherRg 'Microsoft.Resources/resourceGroups@2024-03-01' existing = {
+  name: 'NetworkWatcherRG'
+}
+
+module flowLogs 'modules/flow-logs.bicep' = {
+  name: 'nsg-flow-logs'
+  scope: networkWatcherRg
+  params: {
+    location: location
+    nsg1Id: labEnvironment.outputs.nsg1Id
+    nsg1Name: labEnvironment.outputs.nsg1Name
+    nsg2Id: labEnvironment.outputs.nsg2Id
+    nsg2Name: labEnvironment.outputs.nsg2Name
+    storageAccountId: labEnvironment.outputs.storageAccountId
+    logAnalyticsWorkspaceId: shared.outputs.logAnalyticsWorkspaceId
+  }
+}
+
+// ============================================================
 // RBAC: Student Contributor on the lab RG (Optional)
 // Contributor covers control plane but NOT data plane (storage blob access)
 // The data-plane gap is the RBAC challenge in Module 6
