@@ -64,8 +64,8 @@ Use this checklist after running the Bicep deployment to confirm the lab environ
 
 ## Subscription-level resources
 
-- [ ] Azure Policy: `audit-department-tag` assignment active (Audit effect)
-- [ ] Azure Policy: `audit-environment-tag` assignment active (Audit effect)
+- [ ] Azure Policy: `audit-department-tag` assignment active (DoNotEnforce — audit-only)
+- [ ] Azure Policy: `audit-environment-tag` assignment active (DoNotEnforce — audit-only)
 - [ ] Policy compliance scan completed (allow up to 30 minutes)
 - [ ] Budget (`azure101lab-monthly-budget`) set at $50/month with 80% and 100% thresholds
 - [ ] Activity Log diagnostic setting forwarding to LAW

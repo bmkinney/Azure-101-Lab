@@ -310,7 +310,7 @@ az group list --query "[?starts_with(name, 'azure101lab')].name" --output tsv
 
 ### Deployment fails on VM availability
 
-If the region lacks `Standard_B1s` capacity, change `location` or edit `user-environment.bicep` to use `Standard_B1ls_v2`.
+If the region lacks `Standard_B1s` capacity, change `location` or override the `vmSize` parameter (e.g., `--parameters vmSize=Standard_B1ls_v2`).
 
 ### Bastion deployment fails
 
