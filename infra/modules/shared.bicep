@@ -20,12 +20,31 @@ resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2023-09
   }
 }
 
+// --- Ensure LAW tables exist before DCR references them ---
+// Prevents race condition where DCR deploys before Perf/Syslog tables are initialized
+resource perfTable 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = {
+  parent: logAnalyticsWorkspace
+  name: 'Perf'
+  properties: {
+    retentionInDays: 30
+  }
+}
+
+resource syslogTable 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = {
+  parent: logAnalyticsWorkspace
+  name: 'Syslog'
+  properties: {
+    retentionInDays: 30
+  }
+}
+
 // --- Data Collection Rule for Azure Monitor Agent ---
 // Captures platform VM metrics (CPU, memory, disk, network) and syslog
 // Used by Modules 1, 3, 4 for performance trending and KQL exercises
 resource dataCollectionRule 'Microsoft.Insights/dataCollectionRules@2023-03-11' = {
   name: '${labName}-dcr'
   location: location
+  dependsOn: [perfTable, syslogTable]
   properties: {
     dataSources: {
       performanceCounters: [
