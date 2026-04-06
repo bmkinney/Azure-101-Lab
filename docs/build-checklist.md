@@ -35,9 +35,9 @@ Use this checklist after running the Bicep deployment to confirm the lab environ
 
 ### Compute
 
-- [ ] VM1 (`azure101lab-vm1`) — Ubuntu 22.04, Standard_B1s, **running** (not deallocated)
+- [ ] VM1 (`azure101lab-vm1`) — Ubuntu 22.04, Standard_D2alds_v7, **running** (not deallocated)
 - [ ] VM1 has 4 GB data disk attached
-- [ ] VM2 (`azure101lab-vm2`) — Ubuntu 22.04, Standard_B1s, **running**
+- [ ] VM2 (`azure101lab-vm2`) — Ubuntu 22.04, Standard_D2alds_v7, **running**
 - [ ] VM2 has `ncat -lk 1433` TCP listener active (Custom Script Extension)
 - [ ] Azure Monitor Agent installed on both VMs
 - [ ] DCR association exists for both VMs
@@ -57,7 +57,7 @@ Use this checklist after running the Bicep deployment to confirm the lab environ
 
 ## Faults (verify these are present)
 
-- [ ] CPU spike cron job on VM1 (`stress --cpu 1 --timeout 600` every hour at minute 0)
+- [ ] CPU spike cron job on VM1 (`stress --cpu 2 --timeout 600` every hour at minute 0)
 - [ ] Data disk on VM1 filled >80% with `app-logs.dat`
 - [ ] NSG deny rules block cross-VNet traffic on port 1433 between VNet1 and VNet2
 - [ ] Test blob uploaded to `lab-data` container (for Module 7 audit)

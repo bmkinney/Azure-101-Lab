@@ -7,7 +7,7 @@
 // in a breakout room. One deployment per group subscription.
 //
 // Faults baked in:
-//   - VM1: Standard_B1s with 1 vCPU (CPU spike injected post-deploy via fault-injection.bicep)
+//   - VM1: Standard_D2alds_v7 (CPU spike injected post-deploy via fault-injection.bicep)
 //   - VM1: 4 GB data disk filled to >80% (via fault-injection.bicep)
 //   - NSG1/NSG2: Custom deny rules block cross-VNet traffic (students add allow rules for 1433)
 //   - Storage account: Missing Department and Environment tags (policy fault)
@@ -35,8 +35,8 @@ param logAnalyticsWorkspaceId string
 @description('Contact email for metric alert notifications. Leave empty to skip alerts.')
 param alertEmail string = ''
 
-@description('VM size for both lab VMs. Must be 1 vCPU for Module 1 CPU spike scenario.')
-param vmSize string = 'Standard_B1s'
+@description('VM size for both lab VMs.')
+param vmSize string = 'Standard_D2alds_v7'
 
 // --- Naming ---
 var vnet1Name = '${labName}-vnet1'
@@ -351,7 +351,7 @@ resource storageBlobDiag 'Microsoft.Insights/diagnosticSettings@2021-05-01-previ
 
 // ============================================================
 // VIRTUAL MACHINE 1 — Workload VM
-// Ubuntu 22.04 LTS (1 vCPU — undersized for CPU spike)
+// Ubuntu 22.04 LTS (2 vCPU — undersized for CPU spike)
 // FAULT: CPU spike injected post-deploy (Module 1)
 // FAULT: 4 GB data disk filled to >80% (Module 3)
 // ============================================================

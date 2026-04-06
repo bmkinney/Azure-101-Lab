@@ -17,11 +17,11 @@ Students work in groups of 3, sharing one subscription and one resource group. E
 VM monitoring, metrics analysis, and compute right-sizing
 
 ### Pre-deployed fault
-- A cron job on VM1 runs `stress --cpu 1` for 10 minutes every hour, pegging 1 vCPU at 100%
-- VM1 is `Standard_B1s` (1 vCPU) — completely saturated during spike
+- A cron job on VM1 runs `stress --cpu 2` for 10 minutes every hour, pegging 2 vCPUs at 100%
+- VM1 is `Standard_D2alds_v7` (2 vCPU) — completely saturated during spike
 
 ### Participant outcome
-The participant identifies the periodic CPU spike using Azure Monitor metrics, connects via Bastion to observe the process, and resizes the VM to 2+ vCPU so the spike only consumes ≤50% CPU.
+The participant identifies the periodic CPU spike using Azure Monitor metrics, connects via Bastion to observe the process, and resizes the VM to 4+ vCPU so the spike only consumes ≤50% CPU.
 
 ### Evidence sources
 - Azure Monitor → Metrics (Percentage CPU on VM1)

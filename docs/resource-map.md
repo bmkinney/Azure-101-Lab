@@ -14,7 +14,7 @@ Each group of 3 students shares one Azure subscription, one resource group, and 
 - 2 NSGs (one per VNet workload subnet, with deny rules blocking cross-VNet traffic)
 - 1 Bastion host (in VNet1 AzureBastionSubnet)
 - 2 NICs (one per VM, in respective workload subnets)
-- 2 Ubuntu VMs on `Standard_B1s` (VM1 with data disk, VM2 with TCP listener on 1433)
+- 2 Ubuntu VMs on `Standard_D2alds_v7` (VM1 with data disk, VM2 with TCP listener on 1433)
 - 1 storage account (blob container `lab-data`, boot diagnostics)
 - NSG flow logs for both NSGs (Traffic Analytics enabled)
 - Storage diagnostic settings (StorageBlobLogs → LAW)

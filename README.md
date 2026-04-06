@@ -66,7 +66,7 @@ See [docs/proctor-guide.md](docs/proctor-guide.md) for full deployment and deliv
 
 | # | Module | Fault | Duration |
 |---|---|---|---|
-| 1 | VM Performance | CPU spike from cron job on 1-vCPU VM | 30 min |
+| 1 | VM Performance | CPU spike from cron job on 2-vCPU VM | 30 min |
 | 2 | Network Connectivity | No NSG rules for cross-VNet port 1433 | 30 min |
 | 3 | Disk Capacity | 4 GB data disk filled >80% | 30 min |
 | 4 | Azure Monitor & KQL | Produce evidence for Modules 1-3 | 30 min |

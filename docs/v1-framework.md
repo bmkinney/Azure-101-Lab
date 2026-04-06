@@ -125,7 +125,7 @@ Keep the topology intentionally small.
 - 1 route table
 - 1 NAT gateway associated to the workload subnet
 - 1 Standard public IP attached to the NAT gateway
-- 1 Ubuntu VM on a small burstable SKU such as `Standard_B1s`
+- 1 Ubuntu VM on a small SKU such as `Standard_D2alds_v7`
 - 1 storage account
 - Azure Monitor access for logs and KQL exercises
 

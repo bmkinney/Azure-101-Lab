@@ -11,7 +11,7 @@
 - observe periodic unresponsiveness reported by users
 - investigate Azure Monitor CPU metrics on VM1
 - use Bastion to SSH and observe the stress process
-- resize VM1 to 2+ vCPU
+- resize VM1 to 4+ vCPU
 - verify CPU spike now uses ≤50%
 
 ### 0:40–1:10 — Module 2: Network Connectivity (NSG)

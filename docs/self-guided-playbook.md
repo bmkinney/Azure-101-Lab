@@ -66,8 +66,8 @@ Use these checkpoints as you progress:
 1. Portal access confirmed and resource group identified
 2. Connected to VM1 via Bastion
 3. Identified periodic 100% CPU from `stress` process
-4. Identified VM1 is Standard_B1s (1 vCPU)
-5. Resized VM1 to 2+ vCPU — CPU spike now ≤50%
+4. Identified VM1 is Standard_D2alds_v7
+5. Resized VM1 to 4+ vCPU — CPU spike now ≤50%
 
 ### Module 2 — Network Connectivity
 6. Ran `nc -zv <VM2-IP> 1433` from VM1 — timed out

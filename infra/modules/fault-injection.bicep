@@ -1,7 +1,7 @@
 // fault-injection.bicep - Post-deployment fault injection script
 // Uses a user-assigned managed identity with Contributor on the lab RG
 // FAULTS INJECTED:
-//   1. CPU spike cron job on VM1 — pegs 1 vCPU at 100% for 10 min every hour
+//   1. CPU spike cron job on VM1 — pegs 2 vCPUs at 100% for 10 min every hour
 //   2. Data disk on VM1 — formatted, mounted, filled to >80%
 //   3. Test blob uploaded to storage account (for Module 6 RBAC + Module 7 audit)
 
@@ -51,9 +51,9 @@ echo "=== Processing $VM_NAME in $VM_RG ==="
 # --------------------------------------------------
 # Fault 1: Install CPU spike cron job via CustomScript
 # Installs stress tool and creates a cron job that runs every hour
-# at minute 0, pegging 1 CPU core for 10 minutes.
-# On a Standard_B1s (1 vCPU) this means 100% CPU during spike.
-# Student fix: resize VM to 2+ vCPU so spike only uses 50% or less.
+# at minute 0, pegging 2 CPU cores for 10 minutes.
+# On a Standard_D2alds_v7 (2 vCPU) this means 100% CPU during spike.
+# Student fix: resize VM to a larger SKU so spike uses a smaller percentage of CPU.
 # --------------------------------------------------
 echo "--- Installing CPU spike cron job on $VM_NAME ---"
 cat > /tmp/cpu-spike-body.json << EOF
@@ -65,7 +65,7 @@ cat > /tmp/cpu-spike-body.json << EOF
     "typeHandlerVersion": "2.1",
     "autoUpgradeMinorVersion": true,
     "settings": {
-      "commandToExecute": "apt-get update && apt-get install -y stress && echo '0 * * * * root /usr/bin/stress --cpu 1 --timeout 600' > /etc/cron.d/cpu-spike && chmod 644 /etc/cron.d/cpu-spike && /usr/bin/stress --cpu 1 --timeout 600 &"
+      "commandToExecute": "apt-get update && apt-get install -y stress && echo '0 * * * * root /usr/bin/stress --cpu 2 --timeout 600' > /etc/cron.d/cpu-spike && chmod 644 /etc/cron.d/cpu-spike && /usr/bin/stress --cpu 2 --timeout 600 &"
     }
   }
 }

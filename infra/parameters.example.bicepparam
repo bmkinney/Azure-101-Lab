@@ -23,6 +23,5 @@ param studentPrincipalType = 'Group'
 // Leave empty to skip budget and alert email configuration.
 param alertEmail = ''
 
-// VM size for lab VMs. Must be 1 vCPU for Module 1 CPU spike scenario.
-// Override if Standard_B1s is unavailable in your region (e.g., Standard_B1ls_v2).
-// param vmSize = 'Standard_B1s'
+// VM size for lab VMs. Override if Standard_D2alds_v7 is unavailable in your region.
+// param vmSize = 'Standard_D2alds_v7'

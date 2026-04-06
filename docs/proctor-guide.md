@@ -140,8 +140,8 @@ Contributor on the resource group (assigned via Bicep) handles resource modifica
 | NSG 1 | `azure101lab-nsg1` | On VNet1 workload subnet (deny outbound to VNet2) |
 | NSG 2 | `azure101lab-nsg2` | On VNet2 workload subnet (deny inbound from VNet1) |
 | Bastion | `azure101lab-bastion` | SSH access to both VMs |
-| VM 1 | `azure101lab-vm1` | Ubuntu 22.04, Standard_B1s, 4 GB data disk |
-| VM 2 | `azure101lab-vm2` | Ubuntu 22.04, Standard_B1s, TCP listener on 1433 |
+| VM 1 | `azure101lab-vm1` | Ubuntu 22.04, Standard_D2alds_v7, 4 GB data disk |
+| VM 2 | `azure101lab-vm2` | Ubuntu 22.04, Standard_D2alds_v7, TCP listener on 1433 |
 | Storage Account | `azure101labst` | Blob container `lab-data`, boot diagnostics |
 | NSG Flow Logs | Per NSG | Flow logs to Log Analytics (Traffic Analytics) |
 | Storage Diagnostics | On blob service | StorageBlobLogs to Log Analytics |
@@ -164,10 +164,10 @@ Contributor on the resource group (assigned via Bicep) handles resource modifica
 
 | Detail | Value |
 |---|---|
-| **What's wrong** | Cron job on VM1 runs `stress --cpu 1 --timeout 600` every hour at minute 0 |
-| **Impact** | 100% CPU for 10 min/hour on a 1-vCPU VM (Standard_B1s) |
+| **What's wrong** | Cron job on VM1 runs `stress --cpu 2 --timeout 600` every hour at minute 0 |
+| **Impact** | 100% CPU for 10 min/hour on a 2-vCPU VM (Standard_D2alds_v7) |
 | **What students see** | Periodic unresponsiveness, 100% CPU in Azure Monitor metrics |
-| **Resolution** | Resize VM1 to 2+ vCPU; spike then uses ≤50% |
+| **Resolution** | Resize VM1 to 4+ vCPU; spike then uses ≤50% |
 
 ### Fault 2 — Data disk at capacity (Module 3)
 
@@ -222,7 +222,7 @@ Contributor on the resource group (assigned via Bicep) handles resource modifica
 
 **Present:** "Users report the app on VM1 becomes unresponsive for ~10 minutes every hour."
 
-**Expected path:** Azure Monitor metrics → see periodic 100% CPU → Bastion SSH → `top` shows `stress` → identify 1-vCPU bottleneck → resize VM → verify post-resize metrics.
+**Expected path:** Azure Monitor metrics → see periodic 100% CPU → Bastion SSH → `top` shows `stress` → identify 2-vCPU bottleneck → resize VM → verify post-resize metrics.
 
 **Teaching moments:** Azure Monitor metric analysis, VM sizing, Bastion access, connecting metrics to real symptoms.
 
@@ -310,7 +310,7 @@ az group list --query "[?starts_with(name, 'azure101lab')].name" --output tsv
 
 ### Deployment fails on VM availability
 
-If the region lacks `Standard_B1s` capacity, change `location` or override the `vmSize` parameter (e.g., `--parameters vmSize=Standard_B1ls_v2`).
+If the region lacks `Standard_D2alds_v7` capacity, change `location` or override the `vmSize` parameter.
 
 ### Bastion deployment fails
 

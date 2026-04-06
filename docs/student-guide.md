@@ -54,8 +54,8 @@ Your group environment contains:
 - **VNet 1** (`10.10.0.0/16`) with a workload subnet and AzureBastionSubnet
 - **VNet 2** (`10.11.0.0/16`) with a workload subnet
 - VNet peering between VNet 1 and VNet 2
-- **VM1** in VNet 1 — Ubuntu 22.04, Standard_B1s (1 vCPU), 4 GB data disk
-- **VM2** in VNet 2 — Ubuntu 22.04, Standard_B1s, running a service on port 1433
+- **VM1** in VNet 1 — Ubuntu 22.04, Standard_D2alds_v7, 4 GB data disk
+- **VM2** in VNet 2 — Ubuntu 22.04, Standard_D2alds_v7, running a service on port 1433
 - **Azure Bastion** for SSH access to both VMs
 - **Storage account** with a `lab-data` blob container
 - **NSG per VNet** with custom deny rules blocking cross-VNet traffic

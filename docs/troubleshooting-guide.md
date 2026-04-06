@@ -57,7 +57,7 @@ Use the same flow in every module:
 ### Module 1 — VM Performance
 - **Start with:** Azure Monitor → Metrics → CPU Percentage for VM1
 - **Then:** Bastion SSH → `top` to see `stress` process → `crontab -l` for schedule
-- **Fix with:** VM resize in portal (Standard_B2s or higher)
+- **Fix with:** VM resize in portal (larger SKU)
 
 ### Module 2 — Network Connectivity
 - **Start with:** Bastion SSH to VM1 → `nc -zv <VM2-IP> 1433`

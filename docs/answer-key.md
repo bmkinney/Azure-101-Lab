@@ -8,21 +8,21 @@
 
 ### What's wrong
 
-A cron job runs on VM1 every hour at minute 0, executing `stress --cpu 1 --timeout 600` which pegs 1 CPU core at 100% for 10 minutes. Since VM1 is `Standard_B1s` (1 vCPU), this saturates the entire VM.
+A cron job runs on VM1 every hour at minute 0, executing `stress --cpu 2 --timeout 600` which pegs 2 CPU cores at 100% for 10 minutes. Since VM1 is `Standard_D2alds_v7` (2 vCPU), this saturates the entire VM.
 
 ### Solution steps
 
 1. Open Azure Monitor → Metrics for VM1. Select `Percentage CPU` with a 1-hour time range and 1-minute granularity. Observe periodic spikes to 100%.
 2. Use Bastion to SSH into VM1. Run `top` or `htop` to observe the `stress` process consuming CPU when the spike is active.
 3. Inspect the cron job: `cat /etc/cron.d/cpu-spike`
-4. The root cause is a legitimate workload process on an undersized VM. Resize VM1 to `Standard_B2s` (2 vCPU) or larger via the portal or CLI.
-5. After resize, the next cron spike will only consume ~50% CPU (1 out of 2 cores), keeping the VM responsive.
+4. The root cause is a legitimate workload process on an undersized VM. Resize VM1 to a larger SKU via the portal or CLI.
+5. After resize, the next cron spike will only consume ~50% CPU (2 out of 4 cores), keeping the VM responsive.
 6. Verify in Azure Monitor metrics that CPU utilization during the spike period has dropped.
 
 ### Completion check
 
 - Azure Monitor metrics show the periodic CPU spike pattern
-- VM1 has been resized to 2+ vCPU
+- VM1 has been resized to 4+ vCPU
 - Post-resize metrics confirm CPU utilization during spikes is ≤50%
 
 ---
