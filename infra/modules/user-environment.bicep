@@ -529,42 +529,50 @@ resource dcr2 'Microsoft.Insights/dataCollectionRuleAssociations@2023-03-11' = {
 }
 
 // ============================================================
-// METRIC ALERT: Data disk usage on VM1 (Module 3)
+// LOG ALERT: Data disk usage on VM1 (Module 3)
 // Fires when data disk used percentage > 80%
+// Uses a Scheduled Query Rule against the Perf table in Log Analytics
+// because disk used % is a guest OS metric, not a platform metric.
 // ============================================================
 
-resource diskAlert 'Microsoft.Insights/metricAlerts@2018-03-01' = if (!empty(alertEmail)) {
+resource diskAlert 'Microsoft.Insights/scheduledQueryRules@2023-03-15-preview' = if (!empty(alertEmail)) {
   name: '${vm1Name}-disk-alert'
-  location: 'global'
+  location: location
   properties: {
     description: 'Data disk on ${vm1Name} is over 80% full.'
     severity: 2
     enabled: true
-    scopes: [
-      vm1.id
-    ]
     evaluationFrequency: 'PT5M'
     windowSize: 'PT5M'
-    targetResourceType: 'Microsoft.Compute/virtualMachines'
+    scopes: [
+      logAnalyticsWorkspaceId
+    ]
     criteria: {
-      'odata.type': 'Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria'
       allOf: [
         {
-          name: 'DiskUsedPercentage'
-          metricName: 'Data Disk Used Percentage'
-          metricNamespace: 'Microsoft.Compute/virtualMachines'
+          query: '''
+            Perf
+            | where Computer == "${vm1Name}"
+            | where ObjectName == "Logical Disk" and CounterName == "% Used Space"
+            | where InstanceName == "/mnt/data"
+            | summarize DiskUsedPct = avg(CounterValue) by bin(TimeGenerated, 5m)
+            | where DiskUsedPct > 80
+          '''
+          timeAggregation: 'Count'
           operator: 'GreaterThan'
-          threshold: 80
-          timeAggregation: 'Average'
-          criterionType: 'StaticThresholdCriterion'
+          threshold: 0
+          failingPeriods: {
+            numberOfEvaluationPeriods: 1
+            minFailingPeriodsToAlert: 1
+          }
         }
       ]
     }
-    actions: [
-      {
-        actionGroupId: diskAlertActionGroup.id
-      }
-    ]
+    actions: {
+      actionGroups: [
+        diskAlertActionGroup.id
+      ]
+    }
   }
 }
 
