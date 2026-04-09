@@ -16,7 +16,7 @@ Each group of 3 students shares one Azure subscription, one resource group, and 
 - 2 NICs (one per VM, in respective workload subnets)
 - 2 Ubuntu VMs on `Standard_D2alds_v7` (VM1 with data disk, VM2 with TCP listener on 1433)
 - 1 storage account (blob container `lab-data`, boot diagnostics)
-- NSG flow logs for both NSGs (Traffic Analytics enabled)
+- VNet flow logs for both VNets (Traffic Analytics enabled)
 - Storage diagnostic settings (StorageBlobLogs → LAW)
 - Metric alert (disk capacity >80% on VM1)
 - Action group (email notifications)
@@ -57,7 +57,7 @@ Students SSH to both VMs through Bastion. Cross-VNet connectivity requires NSG r
 - VM1 has a 4 GB data disk (mounted, pre-filled >80%)
 - VM2 runs `ncat -lk 1433` to simulate a SQL listener
 - Storage account has a `lab-data` blob container for RBAC / audit exercises
-- NSG flow logs and storage diagnostic logs feed into the shared LAW
+- VNet flow logs and storage diagnostic logs feed into the shared LAW
 - The DCR routes VM performance counters and syslog to the shared LAW
 - Activity Log at subscription scope also feeds into the shared LAW
 
@@ -77,7 +77,7 @@ Check:
 - NSG1 outbound rules and NSG2 inbound rules
 - Effective security rules on both NICs
 - `nc -zv <VM2-IP> 1433` from VM1
-- NSG flow logs in LAW
+- VNet flow logs in LAW
 - Network Watcher IP flow verify
 
 ### Disk capacity problem (Module 3)

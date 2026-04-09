@@ -75,11 +75,11 @@ Log Analytics, KQL queries, operational evidence gathering
 - None — this scenario uses monitoring data to provide evidence of Scenarios 1-3
 
 ### Participant outcome
-The participant writes KQL queries showing CPU spike trends, NSG flow log blocks, disk utilization, and validates the DCR is collecting all expected telemetry.
+The participant writes KQL queries showing CPU spike trends, VNet flow log blocks, disk utilization, and validates the DCR is collecting all expected telemetry.
 
 ### Evidence sources
 - Perf table (CPU and disk metrics)
-- AzureNetworkAnalytics_CL (NSG flow log denied traffic)
+- AzureNetworkAnalytics_CL (VNet flow log denied traffic)
 - Heartbeat table (VM availability)
 - DCR configuration review
 

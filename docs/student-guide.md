@@ -44,7 +44,7 @@ Your proctor will give you:
 | VM 1 (workload) | `azure101lab-vm1` |
 | VM 2 (database) | `azure101lab-vm2` |
 | Bastion | `azure101lab-bastion` |
-| Storage Account | `azure101labst` |
+| Storage Account | `azure101labst<unique>` |
 | Data Disk | `azure101lab-vm1-datadisk` |
 
 ### Environment topology
@@ -60,7 +60,7 @@ Your group environment contains:
 - **Storage account** with a `lab-data` blob container
 - **NSG per VNet** with custom deny rules blocking cross-VNet traffic
 - Both VMs report metrics and logs to a shared Log Analytics workspace
-- NSG flow logs are enabled and flow to Log Analytics
+- VNet flow logs are enabled and flow to Log Analytics
 
 ## Lab flow
 
@@ -122,7 +122,7 @@ nc -zv <VM2-private-IP> 1433 -w 5
 
 ### Objective
 
-Establish connectivity between VM1 and VM2 on port 1433 by configuring the appropriate NSG rules. Both VMs are in separate VNets that are peered. Verify the connection works after your fix.
+Establish connectivity between VM1 and VM2 on port 1433.
 
 ### References
 
@@ -141,7 +141,7 @@ You received an alert (or see a fired alert in Azure Monitor → Alerts) indicat
 
 ### Objective
 
-Resize the data disk in Azure to a larger size, then extend the partition and filesystem inside the VM's operating system. Confirm that disk utilization has dropped below the alert threshold.
+Resolve the capacity issue so that disk utilization drops below the alert threshold and the alert clears.
 
 ### References
 
@@ -162,7 +162,7 @@ Your manager requires documented, query-based evidence that the operational issu
 Using the shared Log Analytics workspace, produce KQL queries that show:
 
 1. **CPU trend from Module 1** — the historical CPU spike pattern on VM1 before and after the resize
-2. **NSG flow log analysis from Module 2** — blocked traffic events between VM1 and VM2 before the NSG fix
+2. **VNet flow log analysis from Module 2** — blocked traffic events between VM1 and VM2 before the NSG fix
 3. **Disk utilization from Module 3** — data disk capacity trend before and after the resize
 4. **DCR validation** — confirm that the Data Collection Rule is sending all expected data sources to Log Analytics
 
@@ -180,8 +180,6 @@ Using the shared Log Analytics workspace, produce KQL queries that show:
 ### Symptom
 
 When attempting to deploy a new resource, the deployment may fail or produce compliance warnings related to missing tags. Additionally, management has requested a cost report for the lab subscription to understand current spending.
-
-Navigate to **Azure Policy → Compliance** in the portal and observe the non-compliant resource count. Also check the tags on your resources.
 
 ### Objective
 

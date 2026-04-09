@@ -44,7 +44,7 @@ Each group has:
 - 1 Bastion host for SSH access
 - 2 Ubuntu VMs (VM1 with data disk, VM2 with TCP listener on port 1433)
 - 1 storage account with `lab-data` blob container
-- NSG flow logs, storage diagnostic logs, and metric alerts
+- VNet flow logs, storage diagnostic logs, and metric alerts
 - Access to a shared Log Analytics workspace
 
 The environment contains intentional faults. Your job is to find and fix them.
@@ -67,24 +67,24 @@ Use these checkpoints as you progress:
 2. Connected to VM1 via Bastion
 3. Identified periodic 100% CPU from `stress` process
 4. Identified VM1 is Standard_D2alds_v7
-5. Resized VM1 to 4+ vCPU — CPU spike now ≤50%
+5. Resized VM1 to a larger SKU — CPU spike now manageable
 
 ### Module 2 — Network Connectivity
 6. Ran `nc -zv <VM2-IP> 1433` from VM1 — timed out
-7. Reviewed NSG1 and NSG2 — deny rules block cross-VNet traffic on port 1433
-8. Added allow rules on both NSGs
+7. Reviewed NSG1 and NSG2 — identified rules blocking cross-VNet traffic on port 1433
+8. Resolved the NSG rules to allow traffic
 9. Verified `nc -zv <VM2-IP> 1433` succeeds
 
 ### Module 3 — Disk Capacity
 10. Reviewed fired metric alert for disk >80%
 11. SSH to VM1 → `df -h /mnt/data` shows >80% used
 12. Resized disk in Azure portal
-13. Ran `growpart` + `resize2fs` inside VM1
+13. Extended the partition and filesystem inside VM1
 14. Verified disk has free space and alert clears
 
 ### Module 4 — KQL Evidence
 15. Queried `Perf` table for CPU trends
-16. Queried NSG flow logs for port 1433 traffic
+16. Queried VNet flow logs for port 1433 traffic
 17. Queried disk metrics for capacity trend
 18. Produced evidence summary for all modules 1-3
 
@@ -96,7 +96,7 @@ Use these checkpoints as you progress:
 
 ### Module 6 — RBAC Data Plane
 23. Attempted blob upload to `lab-data` → got 403
-24. Identified missing `Storage Blob Data Contributor` role
+24. Identified the missing data-plane role and assigned it
 25. Assigned role → upload succeeded
 
 ### Module 7 — Storage Audit
@@ -113,10 +113,10 @@ Use these checkpoints as you progress:
 
 - Not using Bastion to SSH — there are no public IPs on the VMs
 - Not checking both NSGs when debugging cross-VNet connectivity
-- Forgetting the Linux OS steps after resizing a disk in Azure (growpart + resize2fs)
-- Confusing control-plane Contributor with data-plane Storage Blob Data Contributor
+- Forgetting the Linux OS steps after resizing a disk in Azure
+- Confusing control-plane Contributor with a data-plane storage role
 - Not waiting for metrics/logs to appear in LAW (allow 5-10 minutes for ingestion)
-- Overlooking that NSG flow logs and StorageBlobLogs are in the same LAW as VM telemetry
+- Overlooking that VNet flow logs and StorageBlobLogs are in the same LAW as VM telemetry
 
 ## If you get stuck
 

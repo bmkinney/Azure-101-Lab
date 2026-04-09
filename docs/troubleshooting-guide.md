@@ -23,20 +23,20 @@ Use the same flow in every module:
 - NSG inbound/outbound rules
 - Effective security rules (on NIC)
 - Network Watcher → IP flow verify
-- Network Watcher → NSG flow logs
+- Network Watcher → VNet flow logs
 - `nc -zv <ip> <port>` for connectivity testing
 
 ### Disk management
 - Azure Monitor → Alerts (metric alert for disk >80%)
 - `df -h` (filesystem usage in Linux)
 - `lsblk` (block device listing)
-- Disk resize in portal + `growpart` + `resize2fs` in OS
+- Disk resize in portal + OS-level partition and filesystem extension
 
 ### Monitoring and KQL
 - Log Analytics workspace → Logs (KQL editor)
 - `Perf` table (CPU, memory, disk, network counters)
 - `Syslog` table (cron entries, system events)
-- `AzureNetworkAnalytics_CL` (NSG flow logs via Traffic Analytics)
+- `AzureNetworkAnalytics_CL` (VNet flow logs via Traffic Analytics)
 - `StorageBlobLogs` (blob access audit)
 - `AzureActivity` (control plane operations)
 - `resourcechanges` (Resource Graph for change tracking)
@@ -57,18 +57,18 @@ Use the same flow in every module:
 ### Module 1 — VM Performance
 - **Start with:** Azure Monitor → Metrics → CPU Percentage for VM1
 - **Then:** Bastion SSH → `top` to see `stress` process → `crontab -l` for schedule
-- **Fix with:** VM resize in portal (larger SKU)
+- **Goal:** Reduce CPU utilization below the alert threshold
 
 ### Module 2 — Network Connectivity
 - **Start with:** Bastion SSH to VM1 → `nc -zv <VM2-IP> 1433`
 - **Then:** Review NSG1 outbound rules and NSG2 inbound rules
 - **Also check:** Effective security rules on both NICs, VNet peering status
-- **Fix with:** Add allow rules for port 1433 on both NSGs
+- **Goal:** Establish connectivity from VM1 to VM2 on port 1433
 
 ### Module 3 — Disk Capacity
 - **Start with:** Azure Monitor → Alerts → fired disk alert
 - **Then:** Bastion SSH → `df -h /mnt/data` and `ls -lah /mnt/data`
-- **Fix with:** Resize disk in portal → `growpart /dev/sdc 1` → `resize2fs /dev/sdc1`
+- **Goal:** Reduce disk utilization below the alert threshold
 
 ### Module 4 — KQL Evidence
 - **Start with:** Log Analytics → Logs
@@ -83,7 +83,7 @@ Use the same flow in every module:
 ### Module 6 — RBAC Data Plane
 - **Start with:** Try uploading a blob to `lab-data` container → 403 error
 - **Then:** IAM on storage account → review role assignments
-- **Fix with:** Assign `Storage Blob Data Contributor` role
+- **Goal:** Gain the necessary permissions to upload blobs
 
 ### Module 7 — Storage Audit
 - **Start with:** Log Analytics → `StorageBlobLogs` table
@@ -108,7 +108,7 @@ Use the same flow in every module:
 
 - Changing multiple things at once
 - Not checking both NSGs in a cross-VNet scenario
-- Resizing a disk in Azure but forgetting the OS-level steps (growpart + resize2fs)
-- Confusing Contributor (control plane) with Storage Blob Data Contributor (data plane)
+- Resizing a disk in Azure but forgetting the OS-level steps
+- Confusing control-plane roles with data-plane roles (check the role description carefully)
 - Not waiting for log ingestion before concluding data is missing
 - Running KQL queries against the wrong time range

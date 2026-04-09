@@ -44,14 +44,14 @@ Use this checklist after running the Bicep deployment to confirm the lab environ
 
 ### Storage
 
-- [ ] Storage account (`azure101labst`) created
+- [ ] Storage account (`azure101labst<unique>`) created
 - [ ] Blob container `lab-data` exists
 - [ ] Storage diagnostic settings enabled (StorageBlobLogs → LAW)
 - [ ] Boot diagnostics enabled on both VMs
 
 ### Monitoring
 
-- [ ] NSG flow logs enabled for both NSGs (with Traffic Analytics)
+- [ ] VNet flow logs enabled for both VNets (with Traffic Analytics)
 - [ ] Metric alert for VM1 data disk >80% used
 - [ ] Action group configured with alert email
 

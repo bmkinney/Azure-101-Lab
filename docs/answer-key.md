@@ -105,7 +105,7 @@ VM1 has a 4 GB data disk mounted at `/mnt/data`. A large file (`app-logs.dat`, ~
    ```
    Look for periodic spikes to 100% before resize and ~50% after.
 
-3. **NSG flow logs (Module 2):**
+3. **VNet flow logs (Module 2):**
    ```kusto
    AzureNetworkAnalytics_CL
    | where TimeGenerated > ago(4h)
@@ -138,7 +138,7 @@ VM1 has a 4 GB data disk mounted at `/mnt/data`. A large file (`app-logs.dat`, ~
 
 - At least 3 KQL queries executed with meaningful results
 - CPU spike pattern visible in a time chart
-- Blocked NSG flow log entries found
+- Blocked VNet flow log entries found
 - Disk utilization trend visible
 - Both VMs reporting heartbeats to Log Analytics
 

@@ -28,7 +28,7 @@
 - verify utilization drops below threshold
 
 ### 1:40–2:10 — Module 4: Azure Monitor & KQL Evidence
-- write KQL queries for CPU trend, NSG flow log blocks, disk utilization
+- write KQL queries for CPU trend, VNet flow log blocks, disk utilization
 - validate DCR is collecting all expected telemetry
 - produce query-based evidence of Modules 1-3
 

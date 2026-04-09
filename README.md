@@ -35,7 +35,7 @@ Each group gets:
 - 1 Bastion host for SSH access (no public IPs on VMs)
 - 2 Ubuntu 22.04 VMs (VM1 with data disk + CPU spike, VM2 with TCP 1433 listener)
 - 1 storage account with blob container and diagnostic logging
-- NSG flow logs with Traffic Analytics
+- VNet flow logs with Traffic Analytics
 - Metric alerts for disk capacity
 - Access to a shared Log Analytics workspace
 

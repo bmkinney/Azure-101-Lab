@@ -158,8 +158,8 @@ Contributor on the resource group (assigned via Bicep) handles resource modifica
 | Bastion | `azure101lab-bastion` | SSH access to both VMs |
 | VM 1 | `azure101lab-vm1` | Ubuntu 22.04, Standard_D2alds_v7, 4 GB data disk |
 | VM 2 | `azure101lab-vm2` | Ubuntu 22.04, Standard_D2alds_v7, TCP listener on 1433 |
-| Storage Account | `azure101labst` | Blob container `lab-data`, boot diagnostics |
-| NSG Flow Logs | Per NSG | Flow logs to Log Analytics (Traffic Analytics) |
+| Storage Account | `azure101labst<unique>` | Blob container `lab-data`, boot diagnostics |
+| VNet Flow Logs | Per VNet | Flow logs to Log Analytics (Traffic Analytics) |
 | Storage Diagnostics | On blob service | StorageBlobLogs to Log Analytics |
 
 ### Subscription-level resources
@@ -262,7 +262,7 @@ Contributor on the resource group (assigned via Bicep) handles resource modifica
 
 **Present:** "Your manager needs KQL-based evidence of all issues and fixes."
 
-**Expected path:** Log Analytics → KQL queries for CPU trends, NSG flow logs, disk metrics → DCR validation → produce evidence.
+**Expected path:** Log Analytics → KQL queries for CPU trends, VNet flow logs, disk metrics → DCR validation → produce evidence.
 
 **Teaching moments:** KQL fundamentals, correlation of logs to events, Traffic Analytics, DCR configuration.
 
@@ -342,7 +342,7 @@ Check deployment script logs in the portal (resource type: `Microsoft.Resources/
 
 Storage account names are globally unique. Edit the naming pattern in `user-environment.bicep` to add a short suffix.
 
-### NSG flow logs fail
+### VNet flow logs fail
 
 Network Watcher must be registered in the target region. Run `az network watcher configure --resource-group NetworkWatcherRG --locations <region> --enabled true`.
 

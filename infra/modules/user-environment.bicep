@@ -1,7 +1,7 @@
 // user-environment.bicep - Group lab environment with baked-in faults
 // Deploys: 2 VNets (peered), 2 NSGs, Bastion, 2 NICs, 2 VMs,
 //          data disk on VM1, storage account (blob + diagnostics), DCR associations,
-//          NSG flow logs, storage diagnostic settings
+//          VNet flow logs, storage diagnostic settings
 //
 // All students in a group share this single set of resources and collaborate
 // in a breakout room. One deployment per group subscription.
