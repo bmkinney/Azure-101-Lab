@@ -31,6 +31,22 @@ Adjust naming as needed. Each group gets its own `parameters.bicepparam` file.
 
 ## Deployment instructions
 
+### Step 0 — Clone the repo in Azure Cloud Shell
+
+Open [Azure Cloud Shell](https://shell.azure.com) (Bash) and clone the lab repository:
+
+```bash
+git clone https://github.com/bmkinney/Azure-101-Lab.git
+cd Azure-101-Lab
+```
+
+If the repo was previously cloned, pull the latest changes instead:
+
+```bash
+cd Azure-101-Lab
+git pull origin main
+```
+
 ### Step 1 — Create a parameters file for each group
 
 ```bash

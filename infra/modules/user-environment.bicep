@@ -52,7 +52,7 @@ var vm1Name = '${labName}-vm1'
 var vm2Name = '${labName}-vm2'
 var bastionName = '${labName}-bastion'
 var bastionPipName = '${labName}-bastion-pip'
-var storageAccountName = toLower(replace('${labName}st', '-', ''))
+var storageAccountName = toLower(take('${replace(labName, '-', '')}st${uniqueString(resourceGroup().id)}', 24))
 
 // --- Address Space ---
 var vnet1AddressSpace = '10.10.0.0/16'
