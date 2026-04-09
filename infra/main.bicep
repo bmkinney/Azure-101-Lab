@@ -188,8 +188,9 @@ module faultInjection 'modules/fault-injection.bicep' = {
 }
 
 // ============================================================
-// NSG FLOW LOGS (in NetworkWatcherRG)
-// Network Watcher auto-creates there; flow logs must be children of it.
+// VNET FLOW LOGS (in NetworkWatcherRG)
+// NSG flow logs are retired; VNet flow logs replace them.
+// Network Watcher auto-creates in NetworkWatcherRG.
 // Prerequisite: az network watcher configure --locations <region> --enabled true
 // ============================================================
 
@@ -198,14 +199,14 @@ resource networkWatcherRg 'Microsoft.Resources/resourceGroups@2024-03-01' existi
 }
 
 module flowLogs 'modules/flow-logs.bicep' = {
-  name: 'nsg-flow-logs'
+  name: 'vnet-flow-logs'
   scope: networkWatcherRg
   params: {
     location: location
-    nsg1Id: labEnvironment.outputs.nsg1Id
-    nsg1Name: labEnvironment.outputs.nsg1Name
-    nsg2Id: labEnvironment.outputs.nsg2Id
-    nsg2Name: labEnvironment.outputs.nsg2Name
+    vnet1Id: labEnvironment.outputs.vnet1Id
+    vnet1Name: labEnvironment.outputs.vnet1Name
+    vnet2Id: labEnvironment.outputs.vnet2Id
+    vnet2Name: labEnvironment.outputs.vnet2Name
     storageAccountId: labEnvironment.outputs.storageAccountId
     logAnalyticsWorkspaceId: shared.outputs.logAnalyticsWorkspaceId
   }
