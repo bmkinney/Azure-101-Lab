@@ -60,7 +60,9 @@ resource labRg 'Microsoft.Resources/resourceGroups@2024-03-01' = {
 
 // ============================================================
 // SHARED RESOURCES (in shared RG)
-// Log Analytics workspace, Data Collection Rule, Managed Identity
+// Log Analytics workspace, Managed Identity
+// NOTE: The DCR is deployed separately (after lab resources) to avoid
+//       a race condition where the LAW tables haven't initialized yet.
 // ============================================================
 
 module shared 'modules/shared.bicep' = {
@@ -160,12 +162,44 @@ module labEnvironment 'modules/user-environment.bicep' = {
     location: location
     adminUsername: adminUsername
     adminPassword: adminPassword
-    dataCollectionRuleId: shared.outputs.dataCollectionRuleId
     logAnalyticsWorkspaceId: shared.outputs.logAnalyticsWorkspaceId
     alertEmail: alertEmail
     vmSize: vmSize
     scriptIdentityId: shared.outputs.scriptIdentityId
     scriptIdentityPrincipalId: shared.outputs.scriptIdentityPrincipalId
+  }
+}
+
+// ============================================================
+// DATA COLLECTION RULE (in shared RG)
+// Deployed AFTER lab resources to give the LAW time to initialize
+// its built-in Perf and Syslog tables. Without this delay, the DCR
+// fails with InvalidOutputTable because the tables don't exist yet.
+// ============================================================
+
+module dcr 'modules/dcr.bicep' = {
+  name: 'data-collection-rule'
+  scope: sharedRg
+  params: {
+    location: location
+    labName: labName
+    logAnalyticsWorkspaceId: shared.outputs.logAnalyticsWorkspaceId
+  }
+  dependsOn: [labEnvironment] // ensures LAW has time to fully initialize
+}
+
+// ============================================================
+// DCR ASSOCIATIONS (in lab RG)
+// Links both VMs to the DCR after AMA agent is installed
+// ============================================================
+
+module dcrAssociations 'modules/dcr-associations.bicep' = {
+  name: 'dcr-associations'
+  scope: labRg
+  params: {
+    vm1Name: '${labName}-vm1'
+    vm2Name: '${labName}-vm2'
+    dataCollectionRuleId: dcr.outputs.dataCollectionRuleId
   }
 }
 
@@ -192,13 +226,13 @@ module faultInjection 'modules/fault-injection.bicep' = {
 // ============================================================
 // VNET FLOW LOGS (in NetworkWatcherRG)
 // NSG flow logs are retired; VNet flow logs replace them.
-// We create NetworkWatcherRG + Network Watcher to avoid depending
-// on pre-existing resources that may not exist in all regions.
+// NetworkWatcherRG is referenced as existing because it may already
+// exist in a different location from a previous deployment.
+// Prerequisite: az network watcher configure --locations <region> --enabled true
 // ============================================================
 
-resource networkWatcherRg 'Microsoft.Resources/resourceGroups@2024-03-01' = {
+resource networkWatcherRg 'Microsoft.Resources/resourceGroups@2024-03-01' existing = {
   name: 'NetworkWatcherRG'
-  location: location
 }
 
 module flowLogs 'modules/flow-logs.bicep' = {

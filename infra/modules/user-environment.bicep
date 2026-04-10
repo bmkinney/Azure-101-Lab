@@ -26,9 +26,6 @@ param adminUsername string = 'azureuser'
 @description('Admin password for VMs.')
 param adminPassword string
 
-@description('Resource ID of the shared Data Collection Rule.')
-param dataCollectionRuleId string
-
 @description('Resource ID of the shared Log Analytics workspace.')
 param logAnalyticsWorkspaceId string
 
@@ -509,7 +506,9 @@ resource vm2SqlListener 'Microsoft.Compute/virtualMachines/extensions@2024-07-01
 }
 
 // ============================================================
-// AZURE MONITOR AGENT + DCR ASSOCIATION (both VMs)
+// AZURE MONITOR AGENT (both VMs)
+// DCR associations are deployed separately (dcr-associations.bicep)
+// to allow the DCR time to be created after the LAW fully initializes.
 // ============================================================
 
 resource ama1 'Microsoft.Compute/virtualMachines/extensions@2024-07-01' = {
@@ -536,24 +535,6 @@ resource ama2 'Microsoft.Compute/virtualMachines/extensions@2024-07-01' = {
     autoUpgradeMinorVersion: true
     enableAutomaticUpgrade: true
   }
-}
-
-resource dcr1 'Microsoft.Insights/dataCollectionRuleAssociations@2023-03-11' = {
-  name: '${vm1Name}-dcr-association'
-  scope: vm1
-  properties: {
-    dataCollectionRuleId: dataCollectionRuleId
-  }
-  dependsOn: [ama1]
-}
-
-resource dcr2 'Microsoft.Insights/dataCollectionRuleAssociations@2023-03-11' = {
-  name: '${vm2Name}-dcr-association'
-  scope: vm2
-  properties: {
-    dataCollectionRuleId: dataCollectionRuleId
-  }
-  dependsOn: [ama2]
 }
 
 // ============================================================

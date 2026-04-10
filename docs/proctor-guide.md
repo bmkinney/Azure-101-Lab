@@ -18,6 +18,16 @@ Before deploying the lab environment, confirm:
 - Bicep CLI is available (`az bicep version` — bundled with Azure CLI 2.20+)
 - you know the group assignments
 
+### Enable Network Watcher (required for VNet flow logs)
+
+Run this once per subscription per region before deploying:
+
+```bash
+az network watcher configure --resource-group NetworkWatcherRG --locations <region> --enabled true
+```
+
+This creates the `NetworkWatcherRG` and `NetworkWatcher_<region>` if they don't already exist.
+
 ## Student groups
 
 | Group | Subscription | Students |
@@ -138,7 +148,7 @@ Contributor on the resource group (assigned via Bicep) handles resource modifica
 
 | Resource Group | Contents |
 |---|---|
-| `azure101lab-shared-rg` | Log Analytics workspace, DCR, managed identity, fault injection script |
+| `azure101lab-shared-rg` | Log Analytics workspace, DCR, managed identity |
 | `azure101lab-rg` | All lab resources (VNets, VMs, Bastion, storage, NSGs, flow logs, alerts) |
 
 ### Shared resources (in `azure101lab-shared-rg`)
@@ -335,11 +345,13 @@ If the region lacks `Standard_D2alds_v7` capacity, change `location` or override
 
 Bastion requires the subnet to be named exactly `AzureBastionSubnet` with at least a /26 prefix. Verify the VNet definition in `user-environment.bicep`.
 
-### Fault injection script fails
+### Fault injection fails
 
-Check deployment script logs in the portal (resource type: `Microsoft.Resources/deploymentScripts`). Common issues:
+Fault injection now uses native VM extensions and run commands (not deployment scripts). Check:
+- `CpuSpikeCron` extension on VM1 in the portal (VM → Extensions + applications)
+- `FillDataDisk` and `UploadTestBlob` run commands on VM1
 - Managed identity role propagation delay — re-run the deployment
-- VM not yet fully provisioned — the script has a 30-minute timeout
+- VM not yet fully provisioned — run commands have a 5-minute timeout
 
 ### Storage account name conflict
 
@@ -347,7 +359,11 @@ Storage account names are globally unique. Edit the naming pattern in `user-envi
 
 ### VNet flow logs fail
 
-Network Watcher must be registered in the target region. Run `az network watcher configure --resource-group NetworkWatcherRG --locations <region> --enabled true`.
+Network Watcher must be registered in the target region. Run:
+```bash
+az network watcher configure --resource-group NetworkWatcherRG --locations <region> --enabled true
+```
+If deploying to a region where another deployment already created `NetworkWatcherRG`, this is fine — the RG can host Network Watchers for multiple regions.
 
 ### RBAC assignment fails
 
