@@ -164,25 +164,27 @@ module labEnvironment 'modules/user-environment.bicep' = {
     logAnalyticsWorkspaceId: shared.outputs.logAnalyticsWorkspaceId
     alertEmail: alertEmail
     vmSize: vmSize
+    scriptIdentityId: shared.outputs.scriptIdentityId
+    scriptIdentityPrincipalId: shared.outputs.scriptIdentityPrincipalId
   }
 }
 
 // ============================================================
-// FAULT INJECTION SCRIPT (in shared RG)
-// Installs CPU-spike cron job on VM1 and fills data disk to >80%
+// FAULT INJECTION (in lab RG — native VM extensions + run commands)
+// Installs CPU-spike cron job on VM1, fills data disk to >80%,
+// uploads test blob using managed identity auth.
+// Uses VM extensions and run commands instead of deploymentScripts
+// to avoid Azure Policy conflicts with storage account key auth.
 // ============================================================
 
 module faultInjection 'modules/fault-injection.bicep' = {
   name: 'inject-faults'
-  scope: sharedRg
+  scope: labRg
   params: {
-    vmName: '${labName}-vm1'
-    vmResourceGroup: labRg.name
+    vm1Name: '${labName}-vm1'
     storageAccountName: labEnvironment.outputs.storageAccountName
     location: location
-    scriptIdentityId: shared.outputs.scriptIdentityId
-    subscriptionId: subscription().subscriptionId
-    armEndpoint: environment().resourceManager
+    scriptIdentityClientId: shared.outputs.scriptIdentityClientId
   }
   dependsOn: [identityRole]
 }
@@ -190,12 +192,13 @@ module faultInjection 'modules/fault-injection.bicep' = {
 // ============================================================
 // VNET FLOW LOGS (in NetworkWatcherRG)
 // NSG flow logs are retired; VNet flow logs replace them.
-// Network Watcher auto-creates in NetworkWatcherRG.
-// Prerequisite: az network watcher configure --locations <region> --enabled true
+// We create NetworkWatcherRG + Network Watcher to avoid depending
+// on pre-existing resources that may not exist in all regions.
 // ============================================================
 
-resource networkWatcherRg 'Microsoft.Resources/resourceGroups@2024-03-01' existing = {
+resource networkWatcherRg 'Microsoft.Resources/resourceGroups@2024-03-01' = {
   name: 'NetworkWatcherRG'
+  location: location
 }
 
 module flowLogs 'modules/flow-logs.bicep' = {

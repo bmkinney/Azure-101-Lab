@@ -38,6 +38,9 @@ param alertEmail string = ''
 @description('VM size for both lab VMs.')
 param vmSize string = 'Standard_D2alds_v7'
 
+@description('Resource ID of the user-assigned managed identity for fault injection.')
+param scriptIdentityId string
+
 // --- Naming ---
 var vnet1Name = '${labName}-vnet1'
 var vnet2Name = '${labName}-vnet2'
@@ -350,6 +353,25 @@ resource storageBlobDiag 'Microsoft.Insights/diagnosticSettings@2021-05-01-previ
 }
 
 // ============================================================
+// RBAC: Managed identity → Storage Blob Data Contributor on storage account
+// Required for fault-injection blob upload via identity auth
+// Does NOT affect Module 6 (students still lack data-plane access)
+// ============================================================
+
+@description('Principal ID of the managed identity for blob upload role assignment.')
+param scriptIdentityPrincipalId string
+
+resource blobContributorRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(storageAccount.id, scriptIdentityPrincipalId, 'ba92f5b4-2d11-453d-a403-e96b0029c9fe')
+  scope: storageAccount
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'ba92f5b4-2d11-453d-a403-e96b0029c9fe') // Storage Blob Data Contributor
+    principalId: scriptIdentityPrincipalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+// ============================================================
 // VIRTUAL MACHINE 1 — Workload VM
 // Ubuntu 22.04 LTS (2 vCPU — undersized for CPU spike)
 // FAULT: CPU spike injected post-deploy (Module 1)
@@ -359,6 +381,12 @@ resource storageBlobDiag 'Microsoft.Insights/diagnosticSettings@2021-05-01-previ
 resource vm1 'Microsoft.Compute/virtualMachines@2024-07-01' = {
   name: vm1Name
   location: location
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${scriptIdentityId}': {}
+    }
+  }
   properties: {
     hardwareProfile: {
       vmSize: vmSize

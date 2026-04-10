@@ -117,3 +117,4 @@ output logAnalyticsWorkspaceId string = logAnalyticsWorkspace.id
 output dataCollectionRuleId string = dataCollectionRule.id
 output scriptIdentityId string = scriptIdentity.id
 output scriptIdentityPrincipalId string = scriptIdentity.properties.principalId
+output scriptIdentityClientId string = scriptIdentity.properties.clientId

@@ -17,7 +17,6 @@ Before deploying the lab environment, confirm:
 - Azure CLI is installed and authenticated (`az login`)
 - Bicep CLI is available (`az bicep version` — bundled with Azure CLI 2.20+)
 - you know the group assignments
-- Network Watcher is registered in each subscription's target region
 
 ## Student groups
 
@@ -63,12 +62,15 @@ Repeat for each group.
 
 ### Step 2 — Deploy to each group subscription
 
-Run the deployment once per group, targeting that group's subscription:
+Run the deployment once per group, targeting that group's subscription.
+Use `--name` to give each deployment a unique name — subscription-scoped deployments
+are location-locked by name, so reusing the default name across regions will fail.
 
 ```bash
 # Group 1
 az account set --subscription "Lab-Sub-01"
 az deployment sub create \
+  --name lab-group1 \
   --location eastus \
   --template-file infra/main.bicep \
   --parameters infra/parameters-group1.bicepparam
@@ -76,6 +78,7 @@ az deployment sub create \
 # Group 2
 az account set --subscription "Lab-Sub-02"
 az deployment sub create \
+  --name lab-group2 \
   --location eastus \
   --template-file infra/main.bicep \
   --parameters infra/parameters-group2.bicepparam

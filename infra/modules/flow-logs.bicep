@@ -2,8 +2,7 @@
 // Replaces NSG flow logs (retired June 2025). VNet flow logs capture all
 // traffic in the virtual network, including traffic not covered by NSGs.
 //
-// Prerequisite: Network Watcher must be enabled for the region.
-//   az network watcher configure --locations <region> --enabled true
+// Creates the Network Watcher if it doesn't already exist for the region.
 
 param location string
 param vnet1Id string
@@ -13,8 +12,9 @@ param vnet2Name string
 param storageAccountId string
 param logAnalyticsWorkspaceId string
 
-resource networkWatcher 'Microsoft.Network/networkWatchers@2024-05-01' existing = {
+resource networkWatcher 'Microsoft.Network/networkWatchers@2024-05-01' = {
   name: 'NetworkWatcher_${location}'
+  location: location
 }
 
 resource vnet1FlowLog 'Microsoft.Network/networkWatchers/flowLogs@2024-05-01' = {
