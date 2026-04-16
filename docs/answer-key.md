@@ -99,7 +99,8 @@ VM1 has a 4 GB data disk mounted at `/mnt/data`. A large file (`app-logs.dat`, ~
    ```kusto
    Perf
    | where Computer == "<vm1-name>"
-   | where ObjectName == "Processor Information" and CounterName == "% Processor Time"
+   | where ObjectName == "Processor" and CounterName == "% Processor Time"
+   | where InstanceName == "_Total"
    | where TimeGenerated > ago(4h)
    | summarize AvgCPU=avg(CounterValue) by bin(TimeGenerated, 5m)
    | render timechart
@@ -120,7 +121,7 @@ VM1 has a 4 GB data disk mounted at `/mnt/data`. A large file (`app-logs.dat`, ~
    ```kusto
    Perf
    | where Computer == "<vm1-name>"
-   | where ObjectName == "LogicalDisk" and CounterName == "% Used Space"
+   | where ObjectName == "Logical Disk" and CounterName == "% Used Space"
    | where InstanceName == "/mnt/data"
    | where TimeGenerated > ago(4h)
    | summarize AvgUsed=avg(CounterValue) by bin(TimeGenerated, 5m)
