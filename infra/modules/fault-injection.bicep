@@ -50,8 +50,12 @@ resource cpuSpike 'Microsoft.Compute/virtualMachines/extensions@2024-07-01' = {
 
 // --------------------------------------------------
 // Fault 2: Format, mount, and fill the data disk to >80%
-// The 4 GB data disk is LUN 0 (/dev/sdc on these VMs).
-// We partition, format, mount, then fill with ~3.4 GB using fallocate.
+// The 4 GB data disk is at LUN 0. On NVMe-based SKUs (v6/v7 like
+// Standard_D2alds_v7) it shows up as /dev/nvme*n1, not /dev/sdc, so we
+// resolve it via Azure's stable symlink /dev/disk/azure/data/by-lun/0.
+// We place ext4 directly on the whole device (no partition table) so the
+// student fix is a single resize2fs after the Azure-side disk resize.
+// Then we fill ~3.4 GB with fallocate so the disk is >80% used.
 // --------------------------------------------------
 
 resource diskFill 'Microsoft.Compute/virtualMachines/runCommands@2024-07-01' = {
@@ -60,7 +64,7 @@ resource diskFill 'Microsoft.Compute/virtualMachines/runCommands@2024-07-01' = {
   location: location
   properties: {
     source: {
-      script: 'if [ ! -b /dev/sdc1 ]; then echo "type=83" | sfdisk /dev/sdc && mkfs.ext4 /dev/sdc1; fi && mkdir -p /mnt/data && mount /dev/sdc1 /mnt/data && grep -q "/mnt/data" /etc/fstab || echo "/dev/sdc1 /mnt/data ext4 defaults 0 2" >> /etc/fstab && fallocate -l 3400M /mnt/data/app-logs.dat && echo "Disk filled"'
+      script: 'set -e; DISK=$(readlink -f /dev/disk/azure/data/by-lun/0); [ -b "$DISK" ] || { echo "No data disk at LUN 0"; exit 1; }; blkid "$DISK" >/dev/null 2>&1 || mkfs.ext4 -F "$DISK"; mkdir -p /mnt/data; mountpoint -q /mnt/data || mount "$DISK" /mnt/data; grep -q "/mnt/data" /etc/fstab || echo "$DISK /mnt/data ext4 defaults,nofail 0 2" >> /etc/fstab; fallocate -l 3400M /mnt/data/app-logs.dat; echo "Disk filled on $DISK"'
     }
     asyncExecution: false
     timeoutInSeconds: 300

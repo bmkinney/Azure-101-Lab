@@ -67,14 +67,15 @@ VM1 has a 4 GB data disk mounted at `/mnt/data`. A large file (`app-logs.dat`, ~
    - Stop (deallocate) VM1 if required by the disk SKU, or use online resize if supported.
    - In the portal, navigate to VM1 → Disks → select the data disk → Size + performance → increase to 16 GB or larger.
    - Start VM1 if it was deallocated.
-3. Extend the partition and filesystem inside the OS:
+3. Extend the filesystem inside the OS. The lab places ext4 directly on the whole data disk (no partition table), so only `resize2fs` is needed. The stable device path is `/dev/disk/azure/data/by-lun/0`:
    ```bash
    # Verify the new disk size is visible
    lsblk
-   # Extend the partition (if using sfdisk/fdisk)
-   sudo growpart /dev/sdc 1
-   # Resize the filesystem
-   sudo resize2fs /dev/sdc1
+   # Resolve the data disk device (NVMe on D*v7 SKUs)
+   DISK=$(readlink -f /dev/disk/azure/data/by-lun/0)
+   echo "$DISK"
+   # Resize the filesystem to fill the now-larger disk
+   sudo resize2fs "$DISK"
    # Verify
    df -h /mnt/data
    ```
@@ -120,7 +121,7 @@ VM1 has a 4 GB data disk mounted at `/mnt/data`. A large file (`app-logs.dat`, ~
    Perf
    | where Computer == "<vm1-name>"
    | where ObjectName == "LogicalDisk" and CounterName == "% Used Space"
-   | where InstanceName contains "sdc"
+   | where InstanceName == "/mnt/data"
    | where TimeGenerated > ago(4h)
    | summarize AvgUsed=avg(CounterValue) by bin(TimeGenerated, 5m)
    | render timechart
