@@ -17,7 +17,7 @@ Students work in groups of 3, sharing one subscription and one resource group. E
 VM monitoring, metrics analysis, and compute right-sizing
 
 ### Pre-deployed fault
-- A cron job on VM1 runs `stress --cpu 2` for 10 minutes every hour, pegging 2 vCPUs at 100%
+- A cron job on VM1 runs `stress --cpu 2` for 5 minutes every 15 minutes, pegging 2 vCPUs at 100%
 - VM1 is `Standard_D2alds_v7` (2 vCPU) — completely saturated during spike
 
 ### Participant outcome

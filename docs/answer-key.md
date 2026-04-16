@@ -8,7 +8,7 @@
 
 ### What's wrong
 
-A cron job runs on VM1 every hour at minute 0, executing `stress --cpu 2 --timeout 600` which pegs 2 CPU cores at 100% for 10 minutes. Since VM1 is `Standard_D2alds_v7` (2 vCPU), this saturates the entire VM.
+A cron job runs on VM1 every 15 minutes (at :00, :15, :30, :45), executing `stress --cpu 2 --timeout 300` which pegs 2 CPU cores at 100% for 5 minutes. Since VM1 is `Standard_D2alds_v7` (2 vCPU), this saturates the entire VM.
 
 ### Solution steps
 

@@ -3,7 +3,7 @@
 // Azure Policy conflicts with storage account key-based authentication.
 //
 // FAULTS INJECTED:
-//   1. CPU spike cron job on VM1 — pegs 2 vCPUs at 100% for 10 min every hour
+//   1. CPU spike cron job on VM1 — pegs 2 vCPUs at 100% for 5 min every 15 minutes
 //   2. Data disk on VM1 — formatted, mounted, filled to >80%
 //   3. Test blob uploaded to storage account (for Module 6 RBAC + Module 7 audit)
 
@@ -26,9 +26,10 @@ resource vm1 'Microsoft.Compute/virtualMachines@2024-07-01' existing = {
 
 // --------------------------------------------------
 // Fault 1: CPU spike cron job via CustomScript extension
-// Installs stress tool and creates a cron job that runs every hour
-// at minute 0, pegging 2 CPU cores for 10 minutes.
+// Installs stress tool and creates a cron job that runs every 15 minutes
+// (at :00, :15, :30, :45), pegging 2 CPU cores for 5 minutes.
 // On a Standard_D2alds_v7 (2 vCPU) this means 100% CPU during spike.
+// Cycle: 5 min busy / 10 min quiet — observable within a 30-min module.
 // Student fix: resize VM to a larger SKU so spike uses a smaller percentage of CPU.
 // --------------------------------------------------
 
@@ -42,7 +43,7 @@ resource cpuSpike 'Microsoft.Compute/virtualMachines/extensions@2024-07-01' = {
     typeHandlerVersion: '2.1'
     autoUpgradeMinorVersion: true
     settings: {
-      commandToExecute: 'apt-get update && apt-get install -y stress && echo \'0 * * * * root /usr/bin/stress --cpu 2 --timeout 600\' > /etc/cron.d/cpu-spike && chmod 644 /etc/cron.d/cpu-spike && /usr/bin/stress --cpu 2 --timeout 600 &'
+      commandToExecute: 'apt-get update && apt-get install -y stress && echo \'*/15 * * * * root /usr/bin/stress --cpu 2 --timeout 300\' > /etc/cron.d/cpu-spike && chmod 644 /etc/cron.d/cpu-spike && /usr/bin/stress --cpu 2 --timeout 300 &'
     }
   }
 }

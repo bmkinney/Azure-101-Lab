@@ -193,8 +193,8 @@ Contributor on the resource group (assigned via Bicep) handles resource modifica
 
 | Detail | Value |
 |---|---|
-| **What's wrong** | Cron job on VM1 runs `stress --cpu 2 --timeout 600` every hour at minute 0 |
-| **Impact** | 100% CPU for 10 min/hour on a 2-vCPU VM (Standard_D2alds_v7) |
+| **What's wrong** | Cron job on VM1 runs `stress --cpu 2 --timeout 300` every 15 minutes (at :00, :15, :30, :45) |
+| **Impact** | 100% CPU for 5 min out of every 15 on a 2-vCPU VM (Standard_D2alds_v7) |
 | **What students see** | Periodic unresponsiveness, 100% CPU in Azure Monitor metrics |
 | **Resolution** | Resize VM1 to 4+ vCPU; spike then uses ≤50% |
 
@@ -249,7 +249,7 @@ Contributor on the resource group (assigned via Bicep) handles resource modifica
 
 ### Module 1 — VM Performance (30 min)
 
-**Present:** "Users report the app on VM1 becomes unresponsive for ~10 minutes every hour."
+**Present:** "Users report the app on VM1 becomes unresponsive for about 5 minutes out of every 15."
 
 **Expected path:** Azure Monitor metrics → see periodic 100% CPU → Bastion SSH → `top` shows `stress` → identify 2-vCPU bottleneck → resize VM → verify post-resize metrics.
 

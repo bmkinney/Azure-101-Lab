@@ -57,7 +57,7 @@ Use this checklist after running the Bicep deployment to confirm the lab environ
 
 ## Faults (verify these are present)
 
-- [ ] CPU spike cron job on VM1 (`stress --cpu 2 --timeout 600` every hour at minute 0)
+- [ ] CPU spike cron job on VM1 (`stress --cpu 2 --timeout 300` every 15 minutes)
 - [ ] Data disk on VM1 filled >80% with `app-logs.dat`
 - [ ] NSG deny rules block cross-VNet traffic on port 1433 between VNet1 and VNet2
 - [ ] Test blob uploaded to `lab-data` container (for Module 7 audit)

@@ -95,7 +95,7 @@ Confirm your environment is accessible and familiarize yourself with the resourc
 
 ### Symptom
 
-Users report the application hosted on VM1 becomes unresponsive for approximately 10 minutes every hour. During these periods, the VM is extremely slow and connections time out.
+Users report the application hosted on VM1 becomes unresponsive for approximately 5 minutes out of every 15. During these periods, the VM is extremely slow and connections time out.
 
 ### Objective
 
