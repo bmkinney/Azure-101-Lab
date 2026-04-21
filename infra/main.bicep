@@ -266,6 +266,26 @@ module studentContributor 'modules/role-assignment.bicep' = if (!empty(studentPr
 }
 
 // ============================================================
+// RBAC: Scoped RBAC Admin on storage account (for Module 6)
+// Students have Contributor, which cannot write role assignments.
+// This grants RBAC Administrator scoped ONLY to the lab storage account,
+// with an ABAC condition limiting the roles they can grant to just
+// Storage Blob Data Reader/Contributor. They can self-remediate the
+// data-plane gap without being able to escalate to Owner or grant
+// any other role elsewhere.
+// ============================================================
+
+module studentStorageRbacAdmin 'modules/storage-rbac-admin.bicep' = if (!empty(studentPrincipalId)) {
+  name: 'student-storage-rbac-admin'
+  scope: labRg
+  params: {
+    principalId: studentPrincipalId
+    principalType: studentPrincipalType
+    storageAccountName: labEnvironment.outputs.storageAccountName
+  }
+}
+
+// ============================================================
 // OUTPUTS
 // ============================================================
 

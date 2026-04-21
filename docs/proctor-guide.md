@@ -232,7 +232,7 @@ Contributor on the resource group (assigned via Bicep) handles resource modifica
 | **What's wrong** | Students have Contributor (control plane) but not `Storage Blob Data Contributor` (data plane) |
 | **Impact** | Cannot upload/download blobs |
 | **What students see** | 403 AuthorizationPermissionMismatch on blob upload |
-| **Resolution** | Assign `Storage Blob Data Contributor` on the storage account |
+| **Resolution** | Self-assign `Storage Blob Data Contributor` on the storage account. The lab grants the student principal `Role Based Access Control Administrator` scoped to the storage account, with an ABAC condition limiting assignable roles to `Storage Blob Data Reader`/`Storage Blob Data Contributor`. No proctor intervention needed. |
 
 ### Fault 6 — Test blob + storage logging (Module 7)
 

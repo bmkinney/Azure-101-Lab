@@ -243,6 +243,10 @@ Note: `AzureMetrics` is **not** a valid KQL fallback in this workspace — the l
 
 Students have **Contributor** role on the resource group. Contributor grants control-plane permissions (manage resources, configure settings) but does NOT grant data-plane permissions for storage blob operations. Uploading, downloading, or listing blobs requires a data-plane role such as `Storage Blob Data Contributor`.
 
+### What students can do
+
+Contributor by itself cannot write role assignments. To let students self-remediate without granting Owner, the lab also grants the student principal **Role Based Access Control Administrator** scoped only to the lab storage account, with an ABAC condition that restricts the roles they may grant to `Storage Blob Data Reader` and `Storage Blob Data Contributor`. Any attempt to assign Owner, User Access Administrator, or a role on a different resource will be denied by the condition — this is itself a teachable moment about ABAC and scoped RBAC Admin.
+
 ### Solution steps
 
 1. Navigate to the storage account → Containers → `lab-data`. Try to upload a file. Observe the 403 error.
