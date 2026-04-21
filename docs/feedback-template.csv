@@ -1,0 +1,53 @@
+question_id,section,question_text,response_type,options,required
+Q01,Overall,The lab met the stated learning objectives.,likert_5,Strongly disagree|Disagree|Neutral|Agree|Strongly agree,yes
+Q02,Overall,The difficulty level was appropriate for my experience.,likert_5,Strongly disagree|Disagree|Neutral|Agree|Strongly agree,yes
+Q03,Overall,The pace of the lab was appropriate.,likert_5,Strongly disagree|Disagree|Neutral|Agree|Strongly agree,yes
+Q04,Overall,The balance between hands-on work and instruction was right.,likert_5,Strongly disagree|Disagree|Neutral|Agree|Strongly agree,yes
+Q05,Overall,I feel more confident operating Azure environments after this lab.,likert_5,Strongly disagree|Disagree|Neutral|Agree|Strongly agree,yes
+Q06,Overall,I would recommend this lab to a colleague.,likert_5,Strongly disagree|Disagree|Neutral|Agree|Strongly agree,yes
+Q07,Logistics,Rate the ease of accessing your lab environment (Bastion/portal/credentials).,rating_1_5,,no
+Q08,Logistics,Did you encounter any environment or infrastructure issues that got in the way of learning? Describe.,long_text,,no
+Q09,Logistics,How useful was the student guide as a reference during the lab?,rating_1_5,,no
+Q10,Logistics,Was the group size of 3 students per subscription right for collaboration?,single_choice,Too small|Just right|Too large,no
+Q11_M1_value,Module 1 - VM Performance,How valuable was this module?,rating_1_5,,no
+Q11_M1_clarity,Module 1 - VM Performance,How clear was the problem statement?,rating_1_5,,no
+Q11_M1_difficulty,Module 1 - VM Performance,How difficult was it to solve?,single_choice,Too easy|Just right|Too hard,no
+Q11_M1_time,Module 1 - VM Performance,Approximate time spent (minutes).,number,,no
+Q12_M2_value,Module 2 - NSG Connectivity,How valuable was this module?,rating_1_5,,no
+Q12_M2_clarity,Module 2 - NSG Connectivity,How clear was the problem statement?,rating_1_5,,no
+Q12_M2_difficulty,Module 2 - NSG Connectivity,How difficult was it to solve?,single_choice,Too easy|Just right|Too hard,no
+Q12_M2_time,Module 2 - NSG Connectivity,Approximate time spent (minutes).,number,,no
+Q13_M3_value,Module 3 - Disk Capacity,How valuable was this module?,rating_1_5,,no
+Q13_M3_clarity,Module 3 - Disk Capacity,How clear was the problem statement?,rating_1_5,,no
+Q13_M3_difficulty,Module 3 - Disk Capacity,How difficult was it to solve?,single_choice,Too easy|Just right|Too hard,no
+Q13_M3_time,Module 3 - Disk Capacity,Approximate time spent (minutes).,number,,no
+Q14_M4_value,Module 4 - Azure Monitor & KQL,How valuable was this module?,rating_1_5,,no
+Q14_M4_clarity,Module 4 - Azure Monitor & KQL,How clear was the problem statement?,rating_1_5,,no
+Q14_M4_difficulty,Module 4 - Azure Monitor & KQL,How difficult was it to solve?,single_choice,Too easy|Just right|Too hard,no
+Q14_M4_time,Module 4 - Azure Monitor & KQL,Approximate time spent (minutes).,number,,no
+Q15_M5_value,Module 5 - Cost & Policy,How valuable was this module?,rating_1_5,,no
+Q15_M5_clarity,Module 5 - Cost & Policy,How clear was the problem statement?,rating_1_5,,no
+Q15_M5_difficulty,Module 5 - Cost & Policy,How difficult was it to solve?,single_choice,Too easy|Just right|Too hard,no
+Q15_M5_time,Module 5 - Cost & Policy,Approximate time spent (minutes).,number,,no
+Q16_M6_value,Module 6 - RBAC Data Plane,How valuable was this module?,rating_1_5,,no
+Q16_M6_clarity,Module 6 - RBAC Data Plane,How clear was the problem statement?,rating_1_5,,no
+Q16_M6_difficulty,Module 6 - RBAC Data Plane,How difficult was it to solve?,single_choice,Too easy|Just right|Too hard,no
+Q16_M6_time,Module 6 - RBAC Data Plane,Approximate time spent (minutes).,number,,no
+Q17_M7_value,Module 7 - Storage Audit,How valuable was this module?,rating_1_5,,no
+Q17_M7_clarity,Module 7 - Storage Audit,How clear was the problem statement?,rating_1_5,,no
+Q17_M7_difficulty,Module 7 - Storage Audit,How difficult was it to solve?,single_choice,Too easy|Just right|Too hard,no
+Q17_M7_time,Module 7 - Storage Audit,Approximate time spent (minutes).,number,,no
+Q18_M8_value,Module 8 - Change Tracking,How valuable was this module?,rating_1_5,,no
+Q18_M8_clarity,Module 8 - Change Tracking,How clear was the problem statement?,rating_1_5,,no
+Q18_M8_difficulty,Module 8 - Change Tracking,How difficult was it to solve?,single_choice,Too easy|Just right|Too hard,no
+Q18_M8_time,Module 8 - Change Tracking,Approximate time spent (minutes).,number,,no
+Q19,Learning,Which skills did you strengthen today?,multi_choice,Azure Monitor metrics|KQL queries|NSG troubleshooting|Network Watcher|Linux disk & filesystem|Azure Policy & tags|Cost Management|Control-plane vs data-plane RBAC|Activity Log / Resource Graph|Azure Bastion,no
+Q20,Learning,Which topic do you still feel least confident about and would want a deeper dive on?,long_text,,no
+Q21,Proctor,Rate the proctor's clarity when presenting scenarios.,rating_1_5,,no
+Q22,Proctor,Rate the proctor's responsiveness when your group needed help.,rating_1_5,,no
+Q23,Proctor,When your group got stuck, did you get the right amount of hint/help?,single_choice,Not enough|Just right|Too much,no
+Q24,Open,What is one thing you will take away and apply to your real work?,long_text,,yes
+Q25,Open,What is the single biggest improvement you would make to this lab?,long_text,,yes
+Q26,Open,Which module should be expanded, and which (if any) should be cut or shortened?,long_text,,no
+Q27,Open,Was anything confusing, broken, or out of date?,long_text,,no
+Q28,Open,Any final comments?,long_text,,no

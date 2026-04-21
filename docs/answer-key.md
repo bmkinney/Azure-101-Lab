@@ -92,6 +92,49 @@ VM1 has a 4 GB data disk mounted at `/mnt/data`. A large file (`app-logs.dat`, ~
 
 ## Module 4 — Azure Monitor & KQL Evidence
 
+### Preflight — verify ingestion before running guest-side queries
+
+Guest-side metrics (`Perf`, `Syslog`) only exist once the Azure Monitor Agent (AMA) successfully sends data. If students report `Perf` "does not exist", the table is simply empty for this workspace — not missing. Run these first:
+
+```kusto
+// 1. Is AMA ingesting at all?
+Heartbeat
+| where TimeGenerated > ago(1h)
+| summarize LastSeen=max(TimeGenerated) by Computer, Category
+```
+
+Both `azure101lab-vm1` and `azure101lab-vm2` should appear with `LastSeen` within the last 5–10 min. If a VM is missing:
+
+- VM may be deallocated — `az vm list -d -o table`
+- AMA extension may be absent — `az vm extension list -g azure101lab-rg --vm-name <vm> -o table` (look for `AzureMonitorLinuxAgent`)
+- DCR association may be missing — check the DCR resource → Resources tab
+
+```kusto
+// 2. Is the Perf table receiving rows for the lab VMs?
+Perf
+| where TimeGenerated > ago(1h)
+| where Computer startswith "azure101lab"
+| summarize rows=count() by Computer
+```
+
+If this returns zero rows but Heartbeat has rows, the DCR is not routing performance counters — check the DCR `dataSources.performanceCounters` section.
+
+### Fallback when guest metrics are unavailable
+
+Platform metrics (from the hypervisor) are **always** available via the portal Metrics blade or Azure CLI, independent of AMA:
+
+```powershell
+$vmId = az vm show -g azure101lab-rg -n azure101lab-vm1 --query id -o tsv
+az monitor metrics list `
+  --resource $vmId `
+  --metric "Percentage CPU" `
+  --interval PT5M `
+  --start-time 2026-04-20T00:00:00Z `
+  --output table
+```
+
+Note: `AzureMetrics` is **not** a valid KQL fallback in this workspace — the lab does not deploy a VM-metrics diagnostic setting that routes platform metrics to Log Analytics.
+
 ### Solution steps
 
 1. Open the shared Log Analytics workspace → Logs.
@@ -107,14 +150,22 @@ VM1 has a 4 GB data disk mounted at `/mnt/data`. A large file (`app-logs.dat`, ~
    ```
    Look for periodic spikes to 100% before resize and ~50% after.
 
-3. **VNet flow logs (Module 2):**
+3. **VNet flow logs (Module 2):** Traffic Analytics uses `NTANetAnalytics` (the older `AzureNetworkAnalytics_CL` table is only present on legacy workspaces). Note: Traffic Analytics has a ~10-min processing interval, so the first rows can take 30–60 min to appear after deployment.
    ```kusto
-   AzureNetworkAnalytics_CL
+   NTANetAnalytics
    | where TimeGenerated > ago(4h)
-   | where FlowStatus_s == "D"  // Denied
-   | where DestPort_d == 1433
-   | project TimeGenerated, SrcIP_s, DestIP_s, DestPort_d, FlowStatus_s, NSGRule_s
+   | where DestPort == 1433
+   | where FlowStatus == "D"   // Denied
+   | project TimeGenerated, SrcIp, DestIp, DestPort, FlowStatus, AclRule, SubType
    | order by TimeGenerated desc
+   ```
+   If `AclRule` is not a column in your workspace schema (column names have shifted across TA versions), drop it from `project` or run `NTANetAnalytics | getschema` to list current columns.
+   If the table doesn't exist yet, confirm ingestion with:
+   ```kusto
+   union withsource=T *
+   | where TimeGenerated > ago(4h)
+   | where T startswith "NTA" or T == "AzureNetworkAnalytics_CL"
+   | summarize count() by T
    ```
 
 4. **Disk utilization (Module 3):**
@@ -276,18 +327,21 @@ Storage diagnostic settings are configured to send `StorageRead`, `StorageWrite`
    | order by TimeGenerated desc
    ```
 
-3. **Resource Graph:** In the portal, open Azure Resource Graph Explorer and run:
+3. **Resource Graph:** In the portal, open Azure Resource Graph Explorer (not Log Analytics — different query surface) and run:
    ```kusto
    resourcechanges
-   | where properties.changeAttributes.timestamp > ago(4h)
-   | where resourceGroup contains "azure101lab"
-   | project properties.changeAttributes.timestamp,
-             properties.changeType,
-             targetResourceType,
-             targetResourceId,
-             properties.changes
-   | order by properties_changeAttributes_timestamp desc
+   | extend ChangedAt    = todatetime(properties.changeAttributes.timestamp),
+            ChangeType   = tostring(properties.changeType),
+            ChangedBy    = tostring(properties.changeAttributes.changedBy),
+            TargetId     = tostring(properties.targetResourceId),
+            TargetType   = tostring(properties.targetResourceType),
+            Changes      = properties.changes
+   | where ChangedAt > ago(24h)
+   | where TargetId contains "azure101lab"
+   | project ChangedAt, ChangeType, ChangedBy, TargetType, TargetId, Changes
+   | order by ChangedAt desc
    ```
+   `ChangedBy` is the caller's UPN (users) or objectId (service principals/managed identities). `Changes` shows the before/after for each changed property — expand it to see, e.g., `hardwareProfile.vmSize` go from `Standard_D2alds_v7` to `Standard_D4alds_v7`.
 
 4. Document each change: what was changed, who made it (Caller), and the timestamp.
 
