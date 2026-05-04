@@ -115,10 +115,6 @@ Identify the root cause of the periodic performance degradation using Azure Moni
 
 VM1 cannot connect to the database service running on VM2. Attempts to reach VM2 on port 1433 from VM1 result in connection timeouts.
 
-You can reproduce this by connecting to VM1 via Bastion and testing connectivity:
-```bash
-nc -zv <VM2-private-IP> 1433 -w 5
-```
 
 ### Objective
 
