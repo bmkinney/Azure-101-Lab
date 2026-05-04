@@ -13,11 +13,38 @@ A cron job runs on VM1 every 15 minutes (at :00, :15, :30, :45), executing `stre
 ### Solution steps
 
 1. Open Azure Monitor → Metrics for VM1. Select `Percentage CPU` with a 1-hour time range and 1-minute granularity. Observe periodic spikes to 100%.
-2. Use Bastion to SSH into VM1. Run `top` or `htop` to observe the `stress` process consuming CPU when the spike is active.
+2. Use Bastion to SSH into VM1. Run `top` to observe the `stress` process consuming CPU when the spike is active. Use `top | grep stress` to filter for the stress process specifically.
 3. Inspect the cron job: `cat /etc/cron.d/cpu-spike`
-4. The root cause is a legitimate workload process on an undersized VM. Resize VM1 to a larger SKU via the portal or CLI.
-5. After resize, the next cron spike will only consume ~50% CPU (2 out of 4 cores), keeping the VM responsive.
-6. Verify in Azure Monitor metrics that CPU utilization during the spike period has dropped.
+4. The root cause is a legitimate workload process on an undersized VM. First, identify the current VM SKU.
+
+   **To identify the VM SKU (portal):**
+   - Navigate to VM1 → Size under Availability + scale
+   - Note the current SKU (e.g., `Standard_D2alds_v7` with 2 vCPU)
+
+   **To identify the VM SKU (CLI):**
+   ```bash
+   az vm show --resource-group azure101lab-rg --name azure101lab-vm1 --query hardwareProfile.vmSize -o tsv
+   ```
+
+5. Resize VM1 to a larger SKU (4+ vCPU) via the portal or CLI:
+
+   **To resize (portal):**
+   - Stop the VM (navigate to VM1 → Stop if required)
+   - Navigate to VM1 → Size under Availability + scale
+   - Select a larger SKU (e.g., `Standard_D4alds_v7` with 4 vCPU)
+   - Click Resize
+   - Start the VM
+
+   **To resize (CLI):**
+   ```bash
+   # Check available resize options
+   az vm list-vm-resize-options --name azure101lab-vm1 --resource-group azure101lab-rg --output table
+
+   # Resize the VM
+   az vm resize --name azure101lab-vm1 --resource-group azure101lab-rg --size Standard_D4alds_v7
+   ```
+
+6. After resize, the next cron spike will only consume ~50% CPU (2 out of 4 cores), keeping the VM responsive. Verify in Azure Monitor metrics that CPU utilization during the spike period has dropped.
 
 ### Completion check
 
@@ -41,8 +68,20 @@ Students need to add explicit allow rules at a higher priority (lower number) th
 2. Open NSG1 (on VNet1's workload subnet). Review inbound and outbound rules.
 3. Open NSG2 (on VNet2's workload subnet). Review inbound rules.
 4. Add rules to allow SQL traffic:
-   - **NSG1** — Add outbound allow rule: priority 100, destination = VNet2 subnet prefix (`10.11.0.0/16`), destination port = 1433, protocol = TCP (must be lower priority number than 4096)
-   - **NSG2** — Add inbound allow rule: priority 100, source = VNet1 subnet prefix (`10.10.0.0/16`), destination port = 1433, protocol = TCP (must be lower priority number than 4096)
+   - **NSG1 (outbound)** — Add outbound allow rule: 
+     - Rule name: `AllowOutboundVM2Vnet2Subnet`
+     - Description: `Allow Outbound VM2 Vnet2 Subnet for port 1433`
+     - Priority: 100
+     - Destination: VNet2 subnet prefix (`10.11.0.0/16`)
+     - Destination port: 1433
+     - Protocol: TCP (must be lower priority number than 4096)
+   - **NSG2 (inbound)** — Add inbound allow rule:
+     - Rule name: `AllowInboundVM1Vnet1Subnet`
+     - Description: `Allow inbound VM1 Vnet1 Subnet for port 1433`
+     - Priority: 100
+     - Source: VNet1 subnet prefix (`10.10.0.0/16`)
+     - Destination port: 1433
+     - Protocol: TCP (must be lower priority number than 4096)
 5. Test again from VM1: `nc -zv <VM2-IP> 1433 -w 5` — should succeed.
 6. Use Network Watcher → NSG diagnostics or effective security rules to verify.
 
@@ -92,9 +131,17 @@ VM1 has a 4 GB data disk mounted at `/mnt/data`. A large file (`app-logs.dat`, ~
 
 ## Module 4 — Azure Monitor & KQL Evidence
 
-### Preflight — verify ingestion before running guest-side queries
+### Preflight — verify diagnostic settings and ingestion before running guest-side queries
 
-Guest-side metrics (`Perf`, `Syslog`) only exist once the Azure Monitor Agent (AMA) successfully sends data. If students report `Perf` "does not exist", the table is simply empty for this workspace — not missing. Run these first:
+**Important:** VNet and NSG logs will not appear in Log Analytics unless diagnostic settings are configured to route them to the workspace. If students report missing `NTANetAnalytics` or `AzureDiagnostics` tables:
+
+1. Check that diagnostic settings are enabled for the NSGs and VNets:
+   - Navigate to each NSG → Diagnostic settings
+   - Verify that flow logs or diagnostic logs are enabled and sending to the shared Log Analytics workspace
+   - Check that VNet flow logs are enabled and routed to Log Analytics
+2. Ask the proctor to verify diagnostic settings are configured, or enable them yourself if you have permissions.
+
+Guest-side metrics (`Perf`, `Syslog`) only exist once the Azure Monitor Agent (AMA) successfully sends data. If students report `Perf` "does not exist", the table is simply empty for this workspace — not missing. Run these diagnostics first:
 
 ```kusto
 // 1. Is AMA ingesting at all?
@@ -134,6 +181,114 @@ az monitor metrics list `
 ```
 
 Note: `AzureMetrics` is **not** a valid KQL fallback in this workspace — the lab does not deploy a VM-metrics diagnostic setting that routes platform metrics to Log Analytics.
+
+### Simple Mode Alternative for Proctors Assisting Students Without KQL Experience
+
+If students are unfamiliar with KQL, Log Analytics offers a **simple mode** visual query builder that provides an alternative to hand-written queries. Simple mode is UI-based (dropdown menus, filters, aggregations) rather than text-based. It can produce the same results as KQL for the required evidence objectives.
+
+**Important:** Guide students through simple mode exploration rather than providing completed queries. The goal is to help students produce evidence—either via KQL or simple mode—without sacrificing their learning.
+
+#### Objective 1: CPU Trend (Module 1) — Simple Mode Steps
+
+1. In Log Analytics → **Logs**, click **+** → select **New query** (or leave the default blank query editor)
+2. In the editor, click the **Editor type** dropdown (top right) and select **Simple mode**
+3. In the **Table** dropdown, select **Perf**
+4. Click **Add filter** and select:
+   - Field: `Computer`
+   - Operator: `equals`
+   - Value: `azure101lab-vm1` (or the actual VM name)
+5. Click **Add filter** again:
+   - Field: `ObjectName`
+   - Operator: `equals`
+   - Value: `Processor`
+6. Click **Add filter** again:
+   - Field: `CounterName`
+   - Operator: `equals`
+   - Value: `% Processor Time`
+7. Click **Add filter** again:
+   - Field: `InstanceName`
+   - Operator: `equals`
+   - Value: `_Total`
+8. Click **Add filter** again:
+   - Field: `TimeGenerated`
+   - Operator: `is in the last`
+   - Value: `4 hours`
+9. Under **Aggregations**, click **Add aggregation**:
+   - Aggregate: `CounterValue` (select `Average`)
+   - Group by: `TimeGenerated` (set to `5 minutes`)
+10. Click **Run** to execute the query
+11. Select the **Chart** tab to visualize the CPU trend over time
+
+#### Objective 2: VNet Flow Log Analysis (Module 2) — Simple Mode Steps
+
+1. In Log Analytics → **Logs**, click **+** → select **New query**
+2. Click the **Editor type** dropdown and select **Simple mode**
+3. In the **Table** dropdown, select **NTANetAnalytics**
+   - Note: If `NTANetAnalytics` is not available, check diagnostic settings are configured for VNet flow logs (see "Preflight" section above)
+4. Click **Add filter**:
+   - Field: `TimeGenerated`
+   - Operator: `is in the last`
+   - Value: `4 hours`
+5. Click **Add filter**:
+   - Field: `DestPort`
+   - Operator: `equals`
+   - Value: `1433`
+6. Click **Add filter**:
+   - Field: `FlowStatus`
+   - Operator: `equals`
+   - Value: `D` (for Denied traffic)
+7. Under **Columns**, select the fields to display (e.g., `TimeGenerated`, `SrcIp`, `DestIp`, `DestPort`, `FlowStatus`, `AclRule`)
+   - Note: `AclRule` may not exist in all workspace versions; if not visible, skip it
+8. Click **Run** to execute the query
+9. Review the results to find denied attempts from VM1's VNet to VM2 on port 1433 before the NSG fix
+
+#### Objective 3: Disk Utilization (Module 3) — Simple Mode Steps
+
+1. In Log Analytics → **Logs**, click **+** → select **New query**
+2. Click the **Editor type** dropdown and select **Simple mode**
+3. In the **Table** dropdown, select **Perf**
+4. Click **Add filter**:
+   - Field: `Computer`
+   - Operator: `equals`
+   - Value: `azure101lab-vm1`
+5. Click **Add filter**:
+   - Field: `ObjectName`
+   - Operator: `equals`
+   - Value: `Logical Disk`
+6. Click **Add filter**:
+   - Field: `CounterName`
+   - Operator: `equals`
+   - Value: `% Used Space`
+7. Click **Add filter**:
+   - Field: `InstanceName`
+   - Operator: `equals`
+   - Value: `/mnt/data`
+8. Click **Add filter**:
+   - Field: `TimeGenerated`
+   - Operator: `is in the last`
+   - Value: `4 hours`
+9. Under **Aggregations**, click **Add aggregation**:
+   - Aggregate: `CounterValue` (select `Average`)
+   - Group by: `TimeGenerated` (set to `5 minutes`)
+10. Click **Run** to execute the query
+11. Select the **Chart** tab to visualize disk utilization before and after the resize
+
+#### Objective 4: DCR Validation — Simple Mode Steps
+
+1. In Log Analytics → **Logs**, click **+** → select **New query**
+2. Click the **Editor type** dropdown and select **Simple mode**
+3. In the **Table** dropdown, select **Heartbeat**
+4. Click **Add filter**:
+   - Field: `TimeGenerated`
+   - Operator: `is in the last`
+   - Value: `1 hour`
+5. Under **Aggregations**, click **Add aggregation**:
+   - Aggregate: Select `max` on `TimeGenerated`
+   - Group by: `Computer`
+6. Click **Run** to execute the query
+7. Verify both `azure101lab-vm1` and `azure101lab-vm2` appear with recent heartbeat timestamps
+
+**Reference:** [Getting started with Kusto Query Language - Simple mode](https://learn.microsoft.com/azure/azure-monitor/logs/log-analytics-tutorial#use-simple-mode)
 
 ### Solution steps
 
@@ -210,7 +365,12 @@ Note: `AzureMetrics` is **not** a valid KQL fallback in this workspace — the l
 1. Open Azure Policy → Compliance. Filter to your subscription.
 2. Find the two policy assignments: "Audit resources missing Department tag" and "Audit resources missing Environment tag".
 3. Drill into the non-compliant resources.
-4. Apply tags to your resources via the portal (resource → Tags blade) or CLI:
+4. Trigger a manual policy compliance scan to evaluate current compliance:
+   ```bash
+   az policy state trigger-scan
+   ```
+   (Note: This requires appropriate authorization. If it fails, ask your proctor to trigger it.)
+5. Apply tags to your resources via the portal (resource → Tags blade) or CLI:
    ```bash
    az tag update \
      --resource-id "<resource-id>" \
@@ -220,13 +380,15 @@ Note: `AzureMetrics` is **not** a valid KQL fallback in this workspace — the l
 5. Trigger a policy compliance scan or wait for the next automatic evaluation.
 
 #### Cost report
-6. Navigate to Cost Management → Cost analysis at the subscription scope.
+6. Navigate to the subscription → Reporting + Analytics → Cost Management → Cost analysis at the subscription scope.
 7. Set the date range to the last 7 days, view type to "Actual cost".
 8. Group by Tag (Department) to see costs by tag.
 
 #### Budget review
 9. Navigate to Cost Management → Budgets.
 10. Review the `azure101lab-monthly-budget` — $50/month with alerts at 80% and 100%.
+    - Note: For alerts to be received, an **action group** must be configured on the budget to route notifications (email, SMS, webhook, etc.)
+    - If no action group is configured, the budget will fire but notifications will not be delivered
 
 ### Completion check
 
@@ -345,6 +507,8 @@ Storage diagnostic settings are configured to send `StorageRead`, `StorageWrite`
    | project ChangedAt, ChangeType, ChangedBy, TargetType, TargetId, Changes
    | order by ChangedAt desc
    ```
+   
+   Note: If you receive an error like "The name 'resourcechanges' does not refer to any known table", verify you are in the **Azure Resource Graph Explorer** (not Log Analytics Logs). The query syntax differs between the two tools.
    `ChangedBy` is the caller's UPN (users) or objectId (service principals/managed identities). `Changes` shows the before/after for each changed property — expand it to see, e.g., `hardwareProfile.vmSize` go from `Standard_D2alds_v7` to `Standard_D4alds_v7`.
 
 4. Document each change: what was changed, who made it (Caller), and the timestamp.

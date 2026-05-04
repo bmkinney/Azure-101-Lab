@@ -89,6 +89,14 @@ Confirm your environment is accessible and familiarize yourself with the resourc
 - locate the shared Log Analytics workspace
 - locate Activity Log, Access Control (IAM), Network Watcher, and Azure Monitor in the portal
 
+### Important: Azure Bastion and NSG Configuration
+
+If your environment includes Azure Bastion for secure VM access:
+- Bastion uses SSH or RDP to connect to private VMs
+- Ensure the **Bastion subnet NSG** allows inbound traffic from your client IP or the Azure Bastion service tag
+- For cross-VNet communication via Bastion, ensure the **destination NSG** does not deny inbound traffic from the Bastion subnet or source VNet
+- Test connectivity after confirming NSG rules allow traffic between subnets
+
 ---
 
 ## Module 1 — VM Performance
@@ -106,6 +114,8 @@ Identify the root cause of the periodic performance degradation using Azure Moni
 - [Monitor Azure virtual machines](https://learn.microsoft.com/azure/virtual-machines/monitor-vm)
 - [Resize a virtual machine](https://learn.microsoft.com/azure/virtual-machines/resize-vm)
 - [Connect to a VM using Azure Bastion](https://learn.microsoft.com/azure/bastion/bastion-connect-vm-ssh-linux)
+- [Check and identify VM SKU using Azure CLI](https://learn.microsoft.com/cli/azure/vm?view=azure-cli-latest#az-vm-show)
+- [Resize a Linux virtual machine](https://learn.microsoft.com/azure/virtual-machines/linux/resize-vm)
 
 ---
 
@@ -130,6 +140,7 @@ Establish connectivity between VM1 and VM2 on port 1433.
 - [Diagnose VM network traffic filter problems](https://learn.microsoft.com/azure/virtual-network/diagnose-network-traffic-filter-problem)
 - [Virtual network peering](https://learn.microsoft.com/azure/virtual-network/virtual-network-peering-overview)
 - [Network Watcher overview](https://learn.microsoft.com/azure/network-watcher/network-watcher-overview)
+- [Create, change, or delete an NSG](https://learn.microsoft.com/azure/virtual-network/manage-network-security-group)
 
 ---
 
@@ -166,12 +177,32 @@ Using the shared Log Analytics workspace, produce KQL queries that show:
 3. **Disk utilization from Module 3** — data disk capacity trend before and after the resize
 4. **DCR validation** — confirm that the Data Collection Rule is sending all expected data sources to Log Analytics
 
+### Important: Diagnostic Settings Required for Network and Storage Logs
+
+**Before querying VNet and NSG logs**, confirm that diagnostic settings are configured:
+
+- **VNet flow logs:** Navigate to your VNets → Diagnostic settings. Verify flow logs are enabled and sending to the shared Log Analytics workspace.
+- **NSG diagnostic logs:** Navigate to your NSGs → Diagnostic settings. Verify diagnostic logs or flow logs are enabled and sending to Log Analytics.
+- **If tables are missing:** Tables like `NTANetAnalytics` or `AzureDiagnostics` will not exist until diagnostic settings are configured.
+- **If no data appears:** Ask your proctor to verify or enable diagnostic settings.
+
+Guest-side metrics (`Perf`, `Syslog`) also depend on the Azure Monitor Agent (AMA). If a table appears empty (zero rows), it is simply waiting for data — it is not missing from the workspace.
+
+### Note: Simple Mode Alternative for Log Analytics Queries
+
+If you are not comfortable writing KQL queries, **Log Analytics also offers a simple mode** with a visual query builder (dropdowns, filters, and aggregations). Simple mode does not require knowledge of KQL syntax and can produce the same evidence as hand-written queries.
+
+Your proctor can help guide you through simple mode if needed. Either approach—KQL or simple mode—fulfills the objective of producing query-based evidence for Modules 1–3.
+
+**Reference:** [Getting started with Kusto Query Language - Simple mode](https://learn.microsoft.com/azure/azure-monitor/logs/log-analytics-tutorial#use-simple-mode)
+
 ### References
 
 - [Log queries in Azure Monitor](https://learn.microsoft.com/azure/azure-monitor/logs/log-query-overview)
 - [KQL quick reference](https://learn.microsoft.com/azure/data-explorer/kusto/query/kql-quick-reference)
 - [Azure Monitor Logs overview](https://learn.microsoft.com/azure/azure-monitor/logs/data-platform-logs)
 - [Traffic Analytics](https://learn.microsoft.com/azure/network-watcher/traffic-analytics)
+- [Azure Diagnostic Settings](https://learn.microsoft.com/azure/azure-monitor/essentials/diagnostic-settings)
 
 ---
 
@@ -184,14 +215,17 @@ When attempting to deploy a new resource, the deployment may fail or produce com
 ### Objective
 
 1. Identify all resources in your resource group that are non-compliant with tag policies and apply the required `Department` and `Environment` tags.
-2. Generate an Azure Cost Management report showing actual spend in the last 7 days, grouped by tag, at the subscription scope.
-3. Review the subscription budget and confirm alerts are configured.
+2. Trigger an Azure Policy compliance scan to evaluate current resource compliance.
+3. Generate an Azure Cost Management report showing actual spend in the last 7 days, grouped by tag, at the subscription scope.
+4. Review the subscription budget and confirm alerts are configured with an action group.
 
 ### References
 
 - [Azure Policy overview](https://learn.microsoft.com/azure/governance/policy/overview)
+- [Trigger an on-demand compliance scan](https://learn.microsoft.com/azure/governance/policy/how-to/get-compliance-data#on-demand-compliance-scan-using-azure-cli)
 - [Quickstart: Explore and analyze costs](https://learn.microsoft.com/azure/cost-management-billing/costs/quick-acm-cost-analysis)
 - [Tutorial: Create and manage Azure budgets](https://learn.microsoft.com/azure/cost-management-billing/costs/tutorial-acm-create-budgets)
+- [Trigger compliance scan](https://learn.microsoft.com/azure/governance/policy/how-to/get-compliance-data#on-demand-compliance-scan-using-azure-cli)
 
 ---
 
@@ -249,11 +283,15 @@ Using Azure Activity Logs and Azure Resource Graph, document the infrastructure 
 3. Disk resize operation (Module 3)
 4. Role assignment change (Module 6)
 
+Note: Azure Resource Graph uses different syntax than Log Analytics queries. Ensure you are using the **Azure Resource Graph Explorer** (not Log Analytics Logs) to run `resourcechanges` queries.
+
 ### References
 
 - [Azure Activity Log](https://learn.microsoft.com/azure/azure-monitor/essentials/activity-log)
 - [Azure Resource Graph overview](https://learn.microsoft.com/azure/governance/resource-graph/overview)
+- [Azure Resource Graph query language](https://learn.microsoft.com/azure/governance/resource-graph/concepts/query-language)
 - [Azure Change Analysis](https://learn.microsoft.com/azure/azure-monitor/change/change-analysis)
+- [Querying Azure Resource Graph](https://learn.microsoft.com/azure/governance/resource-graph/concepts/query-language)
 
 ---
 
