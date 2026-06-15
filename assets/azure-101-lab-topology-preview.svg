@@ -1,132 +1,351 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="810" viewBox="0 0 1200 810" role="img" aria-labelledby="title desc">
-  <title id="title">Azure 101 Lab v2 topology preview</title>
-  <desc id="desc">Preview diagram showing two resource groups: a learner resource group with a VNet, subnets, Ubuntu VM, NIC, NSG, route table, and storage account with intentional faults; and a shared resource group with Log Analytics workspace, data collection rule, and managed identity.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="1100" viewBox="0 0 1400 1100" role="img" aria-labelledby="title desc">
+  <title id="title">Azure 101 Lab topology preview</title>
+  <desc id="desc">Per-group topology for the Azure 101 Lab. Shows subscription-scope policy, budget, and Activity Log diagnostics; a shared resource group holding the Log Analytics workspace, data collection rule, and user-assigned managed identity; a NetworkWatcherRG with VNet flow logs; and a lab resource group with two peered VNets, Azure Bastion, two Ubuntu VMs, two NSGs, a storage account, and a disk-usage alert. Five real faults from Modules 1-7 are annotated in red.</desc>
   <defs>
     <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#5b5fc7" />
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#0078d4" />
+    </marker>
+    <marker id="arrow-soft" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#7a7574" />
+    </marker>
+    <marker id="arrow-peer-end" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#5c2d91" />
+    </marker>
+    <marker id="arrow-peer-start" markerWidth="10" markerHeight="10" refX="2" refY="5" orient="auto">
+      <path d="M 10 0 L 0 5 L 10 10 z" fill="#5c2d91" />
     </marker>
     <style>
-      text { font-family: Segoe UI, Arial, sans-serif; fill: #1f1f1f; }
-      .title { font-size: 28px; font-weight: 700; }
-      .subtitle { font-size: 14px; fill: #605e5c; }
-      .section { font-size: 20px; font-weight: 700; fill: #005a9e; }
-      .label { font-size: 16px; font-weight: 700; }
-      .small { font-size: 14px; fill: #323130; }
-      .tiny { font-size: 12px; fill: #605e5c; }
-      .fault { font-size: 11px; fill: #d13438; font-style: italic; font-weight: 600; }
-      .edge { stroke: #0078d4; stroke-width: 2.5; fill: none; marker-end: url(#arrow); }
-      .edge-soft { stroke: #7a7574; stroke-width: 2; fill: none; marker-end: url(#arrow); }
-      .rg { fill: none; stroke: #8a8886; stroke-width: 2.25; stroke-dasharray: 10 6; }
-      .vnet { fill: #f8fbff; stroke: #0078d4; stroke-width: 2.5; }
+      text { font-family: 'Segoe UI', Arial, sans-serif; fill: #1f1f1f; }
+      .title { font-size: 26px; font-weight: 700; }
+      .subtitle { font-size: 13px; fill: #605e5c; }
+      .section { font-size: 16px; font-weight: 700; fill: #005a9e; }
+      .section-vnet { font-size: 14px; font-weight: 700; fill: #5c2d91; }
+      .section-sub { font-size: 12px; font-weight: 700; fill: #0b6a0b; }
+      .label { font-size: 13px; font-weight: 600; fill: #1f1f1f; }
+      .small { font-size: 12px; fill: #323130; }
+      .tiny { font-size: 10.5px; fill: #605e5c; }
+      .fault { font-size: 10.5px; fill: #d13438; font-style: italic; font-weight: 600; }
+      .edge { stroke: #0078d4; stroke-width: 1.8; fill: none; marker-end: url(#arrow); }
+      .edge-soft { stroke: #7a7574; stroke-width: 1.5; fill: none; stroke-dasharray: 5 3; marker-end: url(#arrow-soft); }
+      .edge-peer { stroke: #5c2d91; stroke-width: 2.2; fill: none; marker-end: url(#arrow-peer-end); marker-start: url(#arrow-peer-start); }
+      .rg { fill: none; stroke: #8a8886; stroke-width: 2; stroke-dasharray: 10 6; }
+      .vnet { fill: #f8fbff; stroke: #5c2d91; stroke-width: 2.5; }
       .sub { fill: #ffffff; stroke: #b3b0ad; stroke-width: 1.5; stroke-dasharray: 6 4; }
       .card { fill: #ffffff; stroke: #d2d0ce; stroke-width: 1.25; }
+      .card-info { fill: #eff6fc; stroke: #0078d4; stroke-width: 1.25; }
+      .card-legend { fill: #fff4ce; stroke: #d8b85b; stroke-width: 1; }
+      .edge-label { fill: #ffffff; }
     </style>
   </defs>
 
-  <rect width="1200" height="810" fill="#ffffff" />
-  <text x="600" y="46" text-anchor="middle" class="title">Azure 101 Lab v2 Topology</text>
-  <text x="600" y="70" text-anchor="middle" class="subtitle">Pre-created sandbox subscription with learner and shared resource groups</text>
+  <rect width="1400" height="1100" fill="#ffffff" />
 
-  <!-- Learner Resource Group -->
-  <rect x="40" y="92" width="1120" height="456" rx="24" class="rg" />
-  <text x="78" y="120" class="section">Learner Resource Group</text>
-  <text x="78" y="138" class="tiny">rg-{name}-xylem-lab</text>
+  <!-- Title + subtitle -->
+  <text x="700" y="38" text-anchor="middle" class="title">Azure 101 Lab — Per-group Topology</text>
+  <text x="700" y="62" text-anchor="middle" class="subtitle">Two peered VNets · Two Ubuntu VMs · Shared Log Analytics · Five baked-in faults across Modules 1–7</text>
 
-  <!-- Virtual Network -->
-  <rect x="70" y="156" width="635" height="364" rx="20" class="vnet" />
-  <text x="108" y="184" class="label" fill="#4b3fa8">Virtual Network</text>
-  <text x="108" y="200" class="tiny">10.0.0.0/16</text>
+  <!-- ============================ -->
+  <!-- Subscription scope banner    -->
+  <!-- ============================ -->
+  <rect x="40" y="90" width="1320" height="130" rx="18" class="rg" />
+  <text x="60" y="115" class="section">Subscription scope</text>
+  <text x="60" y="132" class="tiny">Deployed once per group subscription</text>
 
-  <!-- Management Subnet -->
-  <rect x="100" y="222" width="270" height="270" rx="16" class="sub" />
-  <text x="128" y="250" class="label" fill="#2b579a">Management Subnet</text>
-  <text x="128" y="266" class="tiny">10.0.0.0/24</text>
-  <rect x="118" y="290" width="234" height="70" rx="10" class="card" />
-  <text x="235" y="318" text-anchor="middle" class="small">Reserved for management</text>
-  <text x="235" y="338" text-anchor="middle" class="small">and validation exercises</text>
+  <!-- Subscription anchor -->
+  <rect x="60" y="148" width="120" height="60" rx="8" class="card-info" />
+  <rect x="62" y="150" width="4" height="56" rx="2" fill="#0078d4" />
+  <text x="120" y="172" text-anchor="middle" class="label" fill="#005a9e">Subscription</text>
+  <text x="120" y="190" text-anchor="middle" class="tiny">scope = /subscriptions/...</text>
 
-  <!-- Workload Subnet -->
-  <rect x="395" y="222" width="280" height="270" rx="16" class="sub" />
-  <text x="423" y="250" class="label" fill="#0b6a0b">Workload Subnet</text>
-  <text x="423" y="266" class="tiny">10.0.1.0/24</text>
+  <!-- Policy tile -->
+  <rect x="220" y="145" width="320" height="65" rx="8" class="card" />
+  <rect x="222" y="147" width="4" height="61" rx="2" fill="#742774" />
+  <text x="380" y="170" text-anchor="middle" class="label">Tag Policy Audits</text>
+  <text x="380" y="187" text-anchor="middle" class="tiny">Department + Environment (Audit, DoNotEnforce)</text>
+  <text x="380" y="204" text-anchor="middle" class="fault">FAULT (M5): resources missing required tags</text>
 
-  <!-- NIC -->
-  <rect x="415" y="284" width="240" height="50" rx="10" class="card" />
-  <rect x="417" y="292" width="4" height="34" rx="2" fill="#0078d4" />
-  <text x="434" y="306" class="small">Network Interface</text>
-  <text x="434" y="322" class="tiny">No public IP attached</text>
+  <!-- Budget tile -->
+  <rect x="560" y="145" width="320" height="65" rx="8" class="card" />
+  <rect x="562" y="147" width="4" height="61" rx="2" fill="#107c10" />
+  <text x="720" y="170" text-anchor="middle" class="label">Monthly Cost Budget</text>
+  <text x="720" y="187" text-anchor="middle" class="tiny">$50 / month · email alerts at 80% &amp; 100%</text>
+  <text x="720" y="204" text-anchor="middle" class="tiny">action: notify lab owner</text>
 
-  <!-- NIC to VM -->
-  <line x1="535" y1="334" x2="535" y2="354" stroke="#7a7574" stroke-width="2" marker-end="url(#arrow)" />
+  <!-- Activity log tile -->
+  <rect x="900" y="145" width="320" height="65" rx="8" class="card" />
+  <rect x="902" y="147" width="4" height="61" rx="2" fill="#0078d4" />
+  <text x="1060" y="170" text-anchor="middle" class="label">Activity Log → LAW</text>
+  <text x="1060" y="187" text-anchor="middle" class="tiny">diagnostic setting · allLogs category</text>
+  <text x="1060" y="204" text-anchor="middle" class="tiny">subscription-wide audit trail</text>
 
-  <!-- Ubuntu VM -->
-  <rect x="415" y="354" width="240" height="120" rx="10" class="card" />
-  <image x="428" y="362" width="48" height="48" href="data:image/svg+xml;base64,PHN2ZyBpZD0iZmQ0NTRmMWMtNTUwNi00NGI4LTg3NGUtODgxNGI4YjJmNzBiIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgdmlld0JveD0iMCAwIDE4IDE4Ij48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImYzNGQ5NTY5LTJiZDAtNDAwMi04ZjE2LTNkMDFkODEwNmNiNSIgeDE9IjguODgiIHkxPSIxMi4yMSIgeDI9IjguODgiIHkyPSIwLjIxIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjMDA3OGQ0IiAvPjxzdG9wIG9mZnNldD0iMC44MiIgc3RvcC1jb2xvcj0iIzVlYTBlZiIgLz48L2xpbmVhckdyYWRpZW50PjxsaW5lYXJHcmFkaWVudCBpZD0iYmRiNDVhMGItZWI1OC00OTcwLWE2MGEtZmIyY2UzMTRmODY2IiB4MT0iOC44OCIgeTE9IjE2Ljg0IiB4Mj0iOC44OCIgeTI9IjEyLjIxIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHN0b3Agb2Zmc2V0PSIwLjE1IiBzdG9wLWNvbG9yPSIjY2NjIiAvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzcwNzA3MCIgLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48dGl0bGU+SWNvbi1jb21wdXRlLTIxPC90aXRsZT48cmVjdCB4PSItMC4xMiIgeT0iMC4yMSIgd2lkdGg9IjE4IiBoZWlnaHQ9IjEyIiByeD0iMC42IiBmaWxsPSJ1cmwoI2YzNGQ5NTY5LTJiZDAtNDAwMi04ZjE2LTNkMDFkODEwNmNiNSkiIC8+PHBvbHlnb24gcG9pbnRzPSIxMS44OCA0LjQ2IDExLjg4IDcuOTUgOC44OCA5LjcxIDguODggNi4yMSAxMS44OCA0LjQ2IiBmaWxsPSIjNTBlNmZmIiAvPjxwb2x5Z29uIHBvaW50cz0iMTEuODggNC40NiA4Ljg4IDYuMjIgNS44OCA0LjQ2IDguODggMi43MSAxMS44OCA0LjQ2IiBmaWxsPSIjYzNmMWZmIiAvPjxwb2x5Z29uIHBvaW50cz0iOC44OCA2LjIyIDguODggOS43MSA1Ljg4IDcuOTUgNS44OCA0LjQ2IDguODggNi4yMiIgZmlsbD0iIzljZWJmZiIgLz48cG9seWdvbiBwb2ludHM9IjUuODggNy45NSA4Ljg4IDYuMjEgOC44OCA5LjcxIDUuODggNy45NSIgZmlsbD0iI2MzZjFmZiIgLz48cG9seWdvbiBwb2ludHM9IjExLjg4IDcuOTUgOC44OCA2LjIxIDguODggOS43MSAxMS44OCA3Ljk1IiBmaWxsPSIjOWNlYmZmIiAvPjxwYXRoIGQ9Ik0xMi40OSwxNS44NGMtMS43OC0uMjgtMS44NS0xLjU2LTEuODUtMy42M0g3LjExYzAsMi4wNy0uMDYsMy4zNS0xLjg0LDMuNjNhMSwxLDAsMCwwLS44OSwxaDlBMSwxLDAsMCwwLDEyLjQ5LDE1Ljg0WiIgZmlsbD0idXJsKCNiZGI0NWEwYi1lYjU4LTQ5NzAtYTYwYS1mYjJjZTMxNGY4NjYpIiAvPjwvc3ZnPg==" />
-  <text x="486" y="386" class="small">Ubuntu VM</text>
-  <text x="486" y="404" class="tiny">Standard_D2alds_v7 / Ubuntu 22.04</text>
-  <text x="486" y="444" class="fault">Deallocated (fault)</text>
+  <!-- ============================ -->
+  <!-- Shared Resource Group        -->
+  <!-- ============================ -->
+  <rect x="40" y="240" width="320" height="300" rx="18" class="rg" />
+  <text x="60" y="265" class="section">Shared Resource Group</text>
+  <text x="60" y="282" class="tiny">{labName}-shared-rg</text>
 
-  <!-- NSG -->
-  <rect x="740" y="156" width="400" height="100" rx="14" class="card" />
-  <image x="756" y="168" width="48" height="48" href="data:image/svg+xml;base64,PHN2ZyBpZD0iYjc1OTQzYmEtMWEzZi00ODVkLWI0NWQtM2ZlZTAwZWQ3ZTVlIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgdmlld0JveD0iMCAwIDE4IDE4Ij48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImZlNWNlNDNmLTI4MjMtNDYxNy1iYjU0LTU3ZGY5ZTc3ODM3MiIgeDE9IjkuMDEiIHkxPSIwLjc1IiB4Mj0iOS4wMSIgeTI9IjE3LjI1IiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjNWVhMGVmIiAvPjxzdG9wIG9mZnNldD0iMC4xOCIgc3RvcC1jb2xvcj0iIzU1OWNlYyIgLz48c3RvcCBvZmZzZXQ9IjAuNDciIHN0b3AtY29sb3I9IiMzYzkxZTUiIC8+PHN0b3Agb2Zmc2V0PSIwLjg0IiBzdG9wLWNvbG9yPSIjMTM4MGRhIiAvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzAwNzhkNCIgLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48dGl0bGU+SWNvbi1uZXR3b3JraW5nLTY3PC90aXRsZT48cGF0aCBkPSJNMTYuMzYsOC40YzAsNC44NC01Ljg1LDguNzQtNy4xMiw5LjUzYS40Ni40NiwwLDAsMS0uNDgsMGMtMS4yNy0uNzktNy4xMi00LjY5LTcuMTItOS41M1YyLjU4YS40Ni40NiwwLDAsMSwuNDUtLjQ2QzYuNjQsMiw1LjU5LDAsOSwwczIuMzYsMiw2LjkxLDIuMTJhLjQ2LjQ2LDAsMCwxLC40NS40NloiIGZpbGw9IiMwMDc4ZDQiIC8+PHBhdGggZD0iTTE1Ljc1LDguNDVjMCw0LjQ0LTUuMzYsOC02LjUzLDguNzRhLjQzLjQzLDAsMCwxLS40NCwwYy0xLjE3LS43Mi02LjUzLTQuMy02LjUzLTguNzRWMy4xMWEuNDIuNDIsMCwwLDEsLjQxLS40MkM2LjgzLDIuNTgsNS44Ny43NSw5LC43NXMyLjE3LDEuODMsNi4zNCwxLjk0YS40Mi40MiwwLDAsMSwuNDEuNDJaIiBmaWxsPSIjNmJiOWYyIiAvPjxwYXRoIGQ9Ik05LDlWLjc1YzMuMTMsMCwyLjE3LDEuODMsNi4zNCwxLjk0YS40My40MywwLDAsMSwuNDEuNDNWOC40NmE0Ljg5LDQuODksMCwwLDEsMCwuNTRaTTksOUgyLjI4Yy40LDQuMTgsNS4zOCw3LjUsNi41LDguMTlhLjM5LjM5LDAsMCwwLC4xOC4wNkg5WiIgZmlsbD0idXJsKCNmZTVjZTQzZi0yODIzLTQ2MTctYmI1NC01N2RmOWU3NzgzNzIpIiAvPjxwYXRoIGQ9Ik0yLjY2LDIuNjlDNi44MywyLjU4LDUuODcuNzUsOSwuNzVWOUgyLjI4YTQuODksNC44OSwwLDAsMSwwLS41NFYzLjEyQS40My40MywwLDAsMSwyLjY2LDIuNjlaIiBmaWxsPSIjNTBlNmZmIiAvPjxwYXRoIGQ9Ik0xNS43Miw5SDl2OC4yNUg5YS4zOS4zOSwwLDAsMCwuMTgtLjA2QzEwLjM0LDE2LjUsMTUuMzIsMTMuMTgsMTUuNzIsOVoiIGZpbGw9IiM1MGU2ZmYiIC8+PC9zdmc+" />
-  <text x="816" y="192" class="small">Network Security Group</text>
-  <text x="816" y="210" class="tiny">Associated with workload subnet</text>
-  <text x="816" y="240" class="fault">DenyAllInbound rule (fault)</text>
+  <!-- Log Analytics Workspace card -->
+  <rect x="60" y="296" width="280" height="64" rx="8" class="card" />
+  <image x="74" y="306" width="40" height="40" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgdmlld0JveD0iMCAwIDE4IDE4Ij48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImZhYjY2YzllLThhZGUtNGIxNC04NWExLTg5YTNkZDdjZWFlOSIgeDE9IjguMTQxIiB5MT0iMS4wNDgiIHgyPSI4LjE0MSIgeTI9IjEzLjc0MSIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPjxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iIzVlYTBlZiIgLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMwMDc4ZDQiIC8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3QgeT0iMC42MDkiIHdpZHRoPSIxNi4yODIiIGhlaWdodD0iMTMuNjc4IiByeD0iMC43NjEiIGZpbGw9InVybCgjZmFiNjZjOWUtOGFkZS00YjE0LTg1YTEtODlhM2RkN2NlYWU5KSIgLz48ZWxsaXBzZSBjeD0iNi41MjQiIGN5PSI1LjMyOSIgcng9IjEuMTMxIiByeT0iMS4xMzciIGZpbGw9IiNmZmYiIC8+PGVsbGlwc2UgY3g9IjkuNjU5IiBjeT0iNy40NiIgcng9IjEuMTMxIiByeT0iMS4xMzciIGZpbGw9IiNmZmYiIC8+PGVsbGlwc2UgY3g9IjEyLjY5NSIgY3k9IjMuNDIyIiByeD0iMS4xMzEiIHJ5PSIxLjEzNyIgZmlsbD0iI2ZmZiIgLz48ZWxsaXBzZSBjeD0iMy41ODciIGN5PSI5LjUxMSIgcng9IjEuMTMxIiByeT0iMS4xMzciIGZpbGw9IiNmZmYiIC8+PHBvbHlnb24gcG9pbnRzPSIzLjk5NiA5Ljc5OCAzLjE3NyA5LjIyNCA2LjM5OCA0LjY0IDkuNTQ2IDYuNzc4IDEyLjI5NiAzLjEyMiAxMy4wOTUgMy43MjMgOS43NzMgOC4xNDEgNi42NSA2LjAyIDMuOTk2IDkuNzk4IiBmaWxsPSIjZmZmIiAvPjxwYXRoIGQ9Ik02LjkzMSwxNy4wOTJhMS4xNjksMS4xNjksMCwwLDEtMS4xNjgtMS4xNjdjLjItMy44ODksMi41MzktNi4zNjIsNS45NzQtNi4zNjJzNS43OSwyLjQ3Myw1Ljk3NCw2LjNBMS4xNywxLjE3LDAsMCwxLDE2LjYsMTcuMDlsLTkuNjcsMFoiIGZpbGw9IiNmZmYiIC8+PHBhdGggZD0iTTExLjczNyw5Ljg1YzMuNDI3LDAsNS41MiwyLjU0OSw1LjY4Nyw2LjAyOWEuODgxLjg4MSwwLDAsMS0uODM2LjkyNEg2LjkzMWEuODguODgsMCwwLDEtLjg4MS0uODhjMC0uMDE1LDAtLjAzLDAtLjA0NkM2LjIyNywxMi40LDguMzE2LDkuODUsMTEuNzM3LDkuODVtMC0uNTc1Yy0zLjYsMC02LjA1OCwyLjU4MS02LjI2LDYuNTc0di4wNzZhMS40NTgsMS40NTgsMCwwLDAsMS40NTYsMS40NTRoOS42MjZsLjA1OSwwQTEuNDU3LDEuNDU3LDAsMCwwLDE4LDE1Ljg1Yy0uMTg5LTMuOTMyLTIuNzA1LTYuNTc1LTYuMjYxLTYuNTc1WiIgZmlsbD0iIzAwNzhkNCIgLz48cGF0aCBkPSJNMTQuMzY4LDEyLjI3MmEzLjk5MSwzLjk5MSwwLDAsMC0yLjM4Mi0xLjAxNHYxLjg1MWEyLjIyNCwyLjIyNCwwLDAsMSwxLjEwNi40NzJaIiBmaWxsPSIjNTBlNmZmIiAvPjxwYXRoIGQ9Ik05LjA0NCwxMi4yNzJsMS4yNzYsMS4zMDlhMi4yMjQsMi4yMjQsMCwwLDEsMS4xMDYtLjQ3MlYxMS4yNThBMy45OTQsMy45OTQsMCwwLDAsOS4wNDQsMTIuMjcyWiIgZmlsbD0iIzUwZTZmZiIgLz48cGF0aCBkPSJNMTMuNSwxMy45OTNhMi4zNSwyLjM1LDAsMCwxLC40NjIsMS4xMzZoMS44YTQuMjMxLDQuMjMxLDAsMCwwLS45ODctMi40NDVaIiBmaWxsPSIjMzJiZWRkIiAvPjxwYXRoIGQ9Ik05LjkxNywxMy45OTMsOC42NDEsMTIuNjg0YTQuMjIzLDQuMjIzLDAsMCwwLS45ODYsMi40NDVoMS44QTIuMzUyLDIuMzUyLDAsMCwxLDkuOTE3LDEzLjk5M1oiIGZpbGw9IiM1MGU2ZmYiIC8+PHBhdGggZD0iTTE0Ljc3MywxMy41MjZhLjQuNCwwLDAsMC0uMzYzLS4yMzMuMzg4LjM4OCwwLDAsMC0uMTY3LjAzOGwtMi43NzIsMS4zLjMzNC43MjYsMi43NzUtMS4zQS40LjQsMCwwLDAsMTQuNzczLDEzLjUyNloiIGZpbGw9IiNlNjIzMjMiIC8+PGNpcmNsZSBjeD0iMTEuNzM3IiBjeT0iMTQuOTYzIiByPSIwLjk1NCIgZmlsbD0iIzRmNGY0ZiIgLz48L3N2Zz4=" />
+  <text x="200" y="320" class="label">Log Analytics Workspace</text>
+  <text x="200" y="338" class="tiny">{labName}-law · PerGB2018 · 30d retention</text>
+  <text x="200" y="352" class="tiny">central log + KQL sink</text>
 
-  <!-- Route Table -->
-  <rect x="740" y="274" width="400" height="100" rx="14" class="card" />
-  <image x="756" y="286" width="48" height="48" href="data:image/svg+xml;base64,PHN2ZyBpZD0iZWM3MTc2MGQtZWEwNy00MWQ1LTk1MDYtOTRhMGYyNjc3YWE5IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgdmlld0JveD0iMCAwIDE4IDE4Ij48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImVjNmFkODI1LTYwMDgtNDRjMC04YzQ2LWQzMTcxMTIxMzgyNyIgeDE9IjEwLjU2IiB5MT0iNy43NyIgeDI9IjEwLjU2IiB5Mj0iMTkuMjQiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIj48c3RvcCBvZmZzZXQ9IjAuMjIiIHN0b3AtY29sb3I9IiMzMmQ0ZjUiIC8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjMTk4YWIzIiAvPjwvbGluZWFyR3JhZGllbnQ+PGxpbmVhckdyYWRpZW50IGlkPSJiMmMyYmU5ZS0wYTcwLTRhODMtYWI4Zi1iZjgwMjJlNjc5MjQiIHgxPSIxMC4yMyIgeTE9IjEuNjMiIHgyPSIxMS4wNyIgeTI9IjEyLjA0IiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHN0b3Agb2Zmc2V0PSIwLjIyIiBzdG9wLWNvbG9yPSIjMzJkNGY1IiAvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzE5OGFiMyIgLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48dGl0bGU+SWNvbi1uZXR3b3JraW5nLTgyPC90aXRsZT48cGF0aCBkPSJNMTYuMjMsMTcuMTdBMS4yMSwxLjIxLDAsMCwwLDE3LjQ2LDE2VjE1LjhjLS40OS0zLjg2LTIuNjktNy02Ljg5LTdzLTYuNDgsMi42Ni02LjkxLDdhMS4yNCwxLjI0LDAsMCwwLDEuMSwxLjM2SDE2LjIzWiIgZmlsbD0idXJsKCNlYzZhZDgyNS02MDA4LTQ0YzAtOGM0Ni1kMzE3MTEyMTM4MjcpIiAvPjxwYXRoIGQ9Ik0xMC41Nyw5LjcxYTMuODYsMy44NiwwLDAsMS0yLjEtLjYxbDIuMDgsNS40MiwyLjA2LTUuMzlBMy44MywzLjgzLDAsMCwxLDEwLjU3LDkuNzFaIiBmaWxsPSIjZmZmIiBvcGFjaXR5PSIwLjgiIC8+PGNpcmNsZSBjeD0iMTAuNTciIGN5PSI1Ljg0IiByPSIzLjg3IiBmaWxsPSJ1cmwoI2IyYzJiZTllLTBhNzAtNGE4My1hYjhmLWJmODAyMmU2NzkyNCkiIC8+PHBhdGggZD0iTTYsNS44OFYxQS4xNi4xNiwwLDAsMCw1Ljg0LjgzSDQuNTdBLjE3LjE3LDAsMCwwLDQuMzksMVY1LjcxYS4xOC4xOCwwLDAsMS0uMTcuMTdIMy4xQS4xMi4xMiwwLDAsMSwzLDUuNzZWNC40NWEuMTEuMTEsMCwwLDAtLjE5LS4wOEwuNTksNi41N2EuMTYuMTYsMCwwLDAsMCwuMjRMMi43OSw5QS4xMS4xMSwwLDAsMCwzLDguOTNWNy42MUEuMTEuMTEsMCwwLDEsMy4xLDcuNUg1Ljg0QS4xNy4xNywwLDAsMCw2LDcuMzNWNS44OFoiIGZpbGw9IiMwMDc4ZDQiIC8+PC9zdmc+" />
-  <text x="816" y="310" class="small">Route Table</text>
-  <text x="816" y="328" class="tiny">Associated with workload subnet</text>
-  <text x="816" y="358" class="fault">Blackhole 0.0.0.0/0 route (fault)</text>
+  <!-- DCR card -->
+  <rect x="60" y="372" width="280" height="64" rx="8" class="card" />
+  <rect x="62" y="374" width="4" height="60" rx="2" fill="#32d4f5" />
+  <text x="80" y="396" class="label">Data Collection Rule</text>
+  <text x="80" y="414" class="tiny">Perf counters + Syslog → LAW</text>
+  <text x="80" y="428" class="tiny">associated with VM1, VM2</text>
 
-  <!-- Storage Account -->
-  <rect x="740" y="392" width="400" height="100" rx="14" class="card" />
-  <image x="756" y="404" width="48" height="48" href="data:image/svg+xml;base64,PHN2ZyBpZD0iZjJmMDQzNDktOGFlZS00NDEzLTg0YzktYTkwNTM2MTFiMzE5IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgdmlld0JveD0iMCAwIDE4IDE4Ij48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImFkNGM0Zjk2LTA5YWEtNGY5MS1iYTEwLTVjYjhhZDUzMGY3NCIgeDE9IjkiIHkxPSIxNS44MyIgeDI9IjkiIHkyPSI1Ljc5IiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjYjNiM2IzIiAvPjxzdG9wIG9mZnNldD0iMC4yNiIgc3RvcC1jb2xvcj0iI2MxYzFjMSIgLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiNlNmU2ZTYiIC8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHRpdGxlPkljb24tc3RvcmFnZS04NjwvdGl0bGU+PHBhdGggZD0iTS41LDUuNzloMTdhMCwwLDAsMCwxLDAsMHY5LjQ4YS41Ny41NywwLDAsMS0uNTcuNTdIMS4wN2EuNTcuNTcsMCwwLDEtLjU3LS41N1Y1Ljc5QTAsMCwwLDAsMSwuNSw1Ljc5WiIgZmlsbD0idXJsKCNhZDRjNGY5Ni0wOWFhLTRmOTEtYmExMC01Y2I4YWQ1MzBmNzQpIiAvPjxwYXRoIGQ9Ik0xLjA3LDIuMTdIMTYuOTNhLjU3LjU3LDAsMCwxLC41Ny41N1Y1Ljc5YTAsMCwwLDAsMSwwLDBILjVhMCwwLDAsMCwxLDAsMFYyLjczQS41Ny41NywwLDAsMSwxLjA3LDIuMTdaIiBmaWxsPSIjMzdjMmIxIiAvPjxwYXRoIGQ9Ik0yLjgxLDYuODlIMTUuMThhLjI3LjI3LDAsMCwxLC4yNi4yN3YxLjRhLjI3LjI3LDAsMCwxLS4yNi4yN0gyLjgxYS4yNy4yNywwLDAsMS0uMjYtLjI3VjcuMTZBLjI3LjI3LDAsMCwxLDIuODEsNi44OVoiIGZpbGw9IiNmZmYiIC8+PHBhdGggZD0iTTIuODIsOS42OEgxNS4xOWEuMjcuMjcsMCwwLDEsLjI2LjI3djEuNDFhLjI3LjI3LDAsMCwxLS4yNi4yN0gyLjgyYS4yNy4yNywwLDAsMS0uMjYtLjI3VjEwQS4yNy4yNywwLDAsMSwyLjgyLDkuNjhaIiBmaWxsPSIjMzdjMmIxIiAvPjxwYXRoIGQ9Ik0yLjgyLDEyLjVIMTUuMTlhLjI3LjI3LDAsMCwxLC4yNi4yN3YxLjQxYS4yNy4yNywwLDAsMS0uMjYuMjdIMi44MmEuMjcuMjcsMCwwLDEtLjI2LS4yN1YxMi43N0EuMjcuMjcsMCwwLDEsMi44MiwxMi41WiIgZmlsbD0iIzI1ODI3NyIgLz48L3N2Zz4=" />
-  <text x="816" y="428" class="small">Storage Account</text>
-  <text x="816" y="446" class="tiny">VM boot diagnostics</text>
-  <text x="816" y="476" class="fault">Missing required tags (fault)</text>
+  <!-- Managed Identity card -->
+  <rect x="60" y="448" width="280" height="64" rx="8" class="card" />
+  <rect x="62" y="450" width="4" height="60" rx="2" fill="#5c2d91" />
+  <text x="80" y="472" class="label">User-Assigned Managed Identity</text>
+  <text x="80" y="490" class="tiny">{labName}-script-identity</text>
+  <text x="80" y="504" class="tiny">Contributor on Lab RG · Blob Data Contributor on Storage</text>
 
-  <!-- NSG / RT associations -->
-  <path d="M 740 206 L 675 357" class="edge-soft" />
-  <text x="700" y="268" class="tiny">associated</text>
-  <path d="M 740 324 L 675 400" class="edge-soft" />
-  <text x="700" y="356" class="tiny">associated</text>
+  <!-- ============================ -->
+  <!-- NetworkWatcherRG             -->
+  <!-- ============================ -->
+  <rect x="40" y="560" width="320" height="240" rx="18" class="rg" />
+  <text x="60" y="585" class="section">NetworkWatcherRG</text>
+  <text x="60" y="602" class="tiny">Existing regional Network Watcher resource group</text>
 
-  <!-- VM to Storage boot diagnostics -->
-  <path d="M 655 414 L 740 442" class="edge-soft" />
-  <text x="672" y="410" class="tiny">boot diag</text>
+  <rect x="60" y="616" width="280" height="50" rx="8" class="card" />
+  <rect x="62" y="618" width="4" height="46" rx="2" fill="#0078d4" />
+  <text x="80" y="638" class="label">Network Watcher (regional)</text>
+  <text x="80" y="654" class="tiny">hosts the flow log resources below</text>
 
-  <!-- Shared Resource Group -->
-  <rect x="40" y="580" width="1120" height="190" rx="24" class="rg" />
-  <text x="78" y="610" class="section">Shared Resource Group</text>
-  <text x="78" y="628" class="tiny">rg-{name}-xylem-shared</text>
+  <rect x="60" y="676" width="280" height="50" rx="8" class="card-info" />
+  <text x="200" y="697" text-anchor="middle" class="label" fill="#005a9e">VNet1 Flow Log</text>
+  <text x="200" y="713" text-anchor="middle" class="tiny">10 min interval · Traffic Analytics on · 7d retention</text>
 
-  <!-- Log Analytics Workspace -->
-  <rect x="80" y="648" width="300" height="90" rx="14" class="card" />
-  <image x="96" y="660" width="44" height="44" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgdmlld0JveD0iMCAwIDE4IDE4Ij48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImZhYjY2YzllLThhZGUtNGIxNC04NWExLTg5YTNkZDdjZWFlOSIgeDE9IjguMTQxIiB5MT0iMS4wNDgiIHgyPSI4LjE0MSIgeTI9IjEzLjc0MSIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPjxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iIzVlYTBlZiIgLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMwMDc4ZDQiIC8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3QgeT0iMC42MDkiIHdpZHRoPSIxNi4yODIiIGhlaWdodD0iMTMuNjc4IiByeD0iMC43NjEiIGZpbGw9InVybCgjZmFiNjZjOWUtOGFkZS00YjE0LTg1YTEtODlhM2RkN2NlYWU5KSIgLz48ZWxsaXBzZSBjeD0iNi41MjQiIGN5PSI1LjMyOSIgcng9IjEuMTMxIiByeT0iMS4xMzciIGZpbGw9IiNmZmYiIC8+PGVsbGlwc2UgY3g9IjkuNjU5IiBjeT0iNy40NiIgcng9IjEuMTMxIiByeT0iMS4xMzciIGZpbGw9IiNmZmYiIC8+PGVsbGlwc2UgY3g9IjEyLjY5NSIgY3k9IjMuNDIyIiByeD0iMS4xMzEiIHJ5PSIxLjEzNyIgZmlsbD0iI2ZmZiIgLz48ZWxsaXBzZSBjeD0iMy41ODciIGN5PSI5LjUxMSIgcng9IjEuMTMxIiByeT0iMS4xMzciIGZpbGw9IiNmZmYiIC8+PHBvbHlnb24gcG9pbnRzPSIzLjk5NiA5Ljc5OCAzLjE3NyA5LjIyNCA2LjM5OCA0LjY0IDkuNTQ2IDYuNzc4IDEyLjI5NiAzLjEyMiAxMy4wOTUgMy43MjMgOS43NzMgOC4xNDEgNi42NSA2LjAyIDMuOTk2IDkuNzk4IiBmaWxsPSIjZmZmIiAvPjxwYXRoIGQ9Ik02LjkzMSwxNy4wOTJhMS4xNjksMS4xNjksMCwwLDEtMS4xNjgtMS4xNjdjLjItMy44ODksMi41MzktNi4zNjIsNS45NzQtNi4zNjJzNS43OSwyLjQ3Myw1Ljk3NCw2LjNBMS4xNywxLjE3LDAsMCwxLDE2LjYsMTcuMDlsLTkuNjcsMFoiIGZpbGw9IiNmZmYiIC8+PHBhdGggZD0iTTExLjczNyw5Ljg1YzMuNDI3LDAsNS41MiwyLjU0OSw1LjY4Nyw2LjAyOWEuODgxLjg4MSwwLDAsMS0uODM2LjkyNEg2LjkzMWEuODguODgsMCwwLDEtLjg4MS0uODhjMC0uMDE1LDAtLjAzLDAtLjA0NkM2LjIyNywxMi40LDguMzE2LDkuODUsMTEuNzM3LDkuODVtMC0uNTc1Yy0zLjYsMC02LjA1OCwyLjU4MS02LjI2LDYuNTc0di4wNzZhMS40NTgsMS40NTgsMCwwLDAsMS40NTYsMS40NTRoOS42MjZsLjA1OSwwQTEuNDU3LDEuNDU3LDAsMCwwLDE4LDE1Ljg1Yy0uMTg5LTMuOTMyLTIuNzA1LTYuNTc1LTYuMjYxLTYuNTc1WiIgZmlsbD0iIzAwNzhkNCIgLz48cGF0aCBkPSJNMTQuMzY4LDEyLjI3MmEzLjk5MSwzLjk5MSwwLDAsMC0yLjM4Mi0xLjAxNHYxLjg1MWEyLjIyNCwyLjIyNCwwLDAsMSwxLjEwNi40NzJaIiBmaWxsPSIjNTBlNmZmIiAvPjxwYXRoIGQ9Ik05LjA0NCwxMi4yNzJsMS4yNzYsMS4zMDlhMi4yMjQsMi4yMjQsMCwwLDEsMS4xMDYtLjQ3MlYxMS4yNThBMy45OTQsMy45OTQsMCwwLDAsOS4wNDQsMTIuMjcyWiIgZmlsbD0iIzUwZTZmZiIgLz48cGF0aCBkPSJNMTMuNSwxMy45OTNhMi4zNSwyLjM1LDAsMCwxLC40NjIsMS4xMzZoMS44YTQuMjMxLDQuMjMxLDAsMCwwLS45ODctMi40NDVaIiBmaWxsPSIjMzJiZWRkIiAvPjxwYXRoIGQ9Ik05LjkxNywxMy45OTMsOC42NDEsMTIuNjg0YTQuMjIzLDQuMjIzLDAsMCwwLS45ODYsMi40NDVoMS44QTIuMzUyLDIuMzUyLDAsMCwxLDkuOTE3LDEzLjk5M1oiIGZpbGw9IiM1MGU2ZmYiIC8+PHBhdGggZD0iTTE0Ljc3MywxMy41MjZhLjQuNCwwLDAsMC0uMzYzLS4yMzMuMzg4LjM4OCwwLDAsMC0uMTY3LjAzOGwtMi43NzIsMS4zLjMzNC43MjYsMi43NzUtMS4zQS40LjQsMCwwLDAsMTQuNzczLDEzLjUyNloiIGZpbGw9IiNlNjIzMjMiIC8+PGNpcmNsZSBjeD0iMTEuNzM3IiBjeT0iMTQuOTYzIiByPSIwLjk1NCIgZmlsbD0iIzRmNGY0ZiIgLz48L3N2Zz4=" />
-  <text x="152" y="682" class="small">Log Analytics Workspace</text>
-  <text x="152" y="700" class="tiny">Centralized log collection</text>
+  <rect x="60" y="736" width="280" height="50" rx="8" class="card-info" />
+  <text x="200" y="757" text-anchor="middle" class="label" fill="#005a9e">VNet2 Flow Log</text>
+  <text x="200" y="773" text-anchor="middle" class="tiny">→ Storage Account + LAW (JSON v2)</text>
 
-  <!-- Data Collection Rule -->
-  <rect x="410" y="648" width="300" height="90" rx="14" class="card" />
-  <rect x="412" y="660" width="4" height="66" rx="2" fill="#32d4f5" />
-  <text x="428" y="682" class="small">Data Collection Rule</text>
-  <text x="428" y="700" class="tiny">AMA agent configuration</text>
+  <!-- ============================ -->
+  <!-- Lab Resource Group           -->
+  <!-- ============================ -->
+  <rect x="380" y="240" width="980" height="820" rx="18" class="rg" />
+  <text x="400" y="265" class="section">Lab Resource Group</text>
+  <text x="400" y="282" class="tiny">{labName}-rg — shared by all students in the group</text>
 
-  <!-- Managed Identity -->
-  <rect x="740" y="648" width="300" height="90" rx="14" class="card" />
-  <rect x="742" y="660" width="4" height="66" rx="2" fill="#5c2d91" />
-  <text x="758" y="682" class="small">Managed Identity</text>
-  <text x="758" y="700" class="tiny">Fault injection automation</text>
+  <!-- VNet1 -->
+  <rect x="400" y="295" width="460" height="440" rx="14" class="vnet" />
+  <text x="415" y="317" class="section-vnet">VNet1 — 10.10.0.0/16</text>
 
-  <!-- VM to DCR (AMA agent) -->
-  <path d="M 535 474 L 535 564 L 560 564 L 560 648" class="edge" />
-  <text x="544" y="555" class="tiny">AMA agent</text>
+  <!-- AzureBastionSubnet -->
+  <rect x="415" y="335" width="430" height="125" rx="10" class="sub" />
+  <text x="425" y="355" class="section-sub">AzureBastionSubnet — 10.10.254.0/26</text>
 
-  <!-- DCR to Log Analytics -->
-  <path d="M 410 693 L 380 693" class="edge" />
-  <text x="386" y="710" class="tiny">data flow</text>
+  <!-- Bastion card -->
+  <rect x="430" y="370" width="190" height="75" rx="8" class="card" />
+  <rect x="432" y="372" width="4" height="71" rx="2" fill="#0078d4" />
+  <text x="525" y="392" text-anchor="middle" class="label">Azure Bastion</text>
+  <text x="525" y="408" text-anchor="middle" class="tiny">Basic SKU</text>
+  <text x="525" y="424" text-anchor="middle" class="tiny">browser-based SSH to VMs</text>
 
-  <text x="70" y="798" class="tiny">Preview only. Editable source: assets/azure-101-lab-topology.drawio</text>
+  <!-- Bastion PIP card -->
+  <rect x="640" y="370" width="190" height="75" rx="8" class="card" />
+  <rect x="642" y="372" width="4" height="71" rx="2" fill="#0b6a0b" />
+  <text x="735" y="392" text-anchor="middle" class="label">Bastion Public IP</text>
+  <text x="735" y="408" text-anchor="middle" class="tiny">Standard · Static</text>
+  <text x="735" y="424" text-anchor="middle" class="tiny">only public endpoint in lab</text>
+
+  <!-- workload-snet1 -->
+  <rect x="415" y="475" width="430" height="250" rx="10" class="sub" />
+  <text x="425" y="495" class="section-sub">workload-snet1 — 10.10.1.0/24</text>
+
+  <!-- NIC1 -->
+  <rect x="430" y="510" width="170" height="50" rx="8" class="card" />
+  <rect x="432" y="512" width="4" height="46" rx="2" fill="#0078d4" />
+  <text x="515" y="530" text-anchor="middle" class="label">NIC1</text>
+  <text x="515" y="546" text-anchor="middle" class="tiny">no public IP</text>
+
+  <!-- NSG1 -->
+  <rect x="640" y="510" width="190" height="105" rx="8" class="card" />
+  <image x="654" y="520" width="38" height="38" href="data:image/svg+xml;base64,PHN2ZyBpZD0iYjc1OTQzYmEtMWEzZi00ODVkLWI0NWQtM2ZlZTAwZWQ3ZTVlIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgdmlld0JveD0iMCAwIDE4IDE4Ij48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImZlNWNlNDNmLTI4MjMtNDYxNy1iYjU0LTU3ZGY5ZTc3ODM3MiIgeDE9IjkuMDEiIHkxPSIwLjc1IiB4Mj0iOS4wMSIgeTI9IjE3LjI1IiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjNWVhMGVmIiAvPjxzdG9wIG9mZnNldD0iMC4xOCIgc3RvcC1jb2xvcj0iIzU1OWNlYyIgLz48c3RvcCBvZmZzZXQ9IjAuNDciIHN0b3AtY29sb3I9IiMzYzkxZTUiIC8+PHN0b3Agb2Zmc2V0PSIwLjg0IiBzdG9wLWNvbG9yPSIjMTM4MGRhIiAvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzAwNzhkNCIgLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48dGl0bGU+SWNvbi1uZXR3b3JraW5nLTY3PC90aXRsZT48cGF0aCBkPSJNMTYuMzYsOC40YzAsNC44NC01Ljg1LDguNzQtNy4xMiw5LjUzYS40Ni40NiwwLDAsMS0uNDgsMGMtMS4yNy0uNzktNy4xMi00LjY5LTcuMTItOS41M1YyLjU4YS40Ni40NiwwLDAsMSwuNDUtLjQ2QzYuNjQsMiw1LjU5LDAsOSwwczIuMzYsMiw2LjkxLDIuMTJhLjQ2LjQ2LDAsMCwxLC40NS40NloiIGZpbGw9IiMwMDc4ZDQiIC8+PHBhdGggZD0iTTE1Ljc1LDguNDVjMCw0LjQ0LTUuMzYsOC02LjUzLDguNzRhLjQzLjQzLDAsMCwxLS40NCwwYy0xLjE3LS43Mi02LjUzLTQuMy02LjUzLTguNzRWMy4xMWEuNDIuNDIsMCwwLDEsLjQxLS40MkM2LjgzLDIuNTgsNS44Ny43NSw5LC43NXMyLjE3LDEuODMsNi4zNCwxLjk0YS40Mi40MiwwLDAsMSwuNDEuNDJaIiBmaWxsPSIjNmJiOWYyIiAvPjxwYXRoIGQ9Ik05LDlWLjc1YzMuMTMsMCwyLjE3LDEuODMsNi4zNCwxLjk0YS40My40MywwLDAsMSwuNDEuNDNWOC40NmE0Ljg5LDQuODksMCwwLDEsMCwuNTRaTTksOUgyLjI4Yy40LDQuMTgsNS4zOCw3LjUsNi41LDguMTlhLjM5LjM5LDAsMCwwLC4xOC4wNkg5WiIgZmlsbD0idXJsKCNmZTVjZTQzZi0yODIzLTQ2MTctYmI1NC01N2RmOWU3NzgzNzIpIiAvPjxwYXRoIGQ9Ik0yLjY2LDIuNjlDNi44MywyLjU4LDUuODcuNzUsOSwuNzVWOUgyLjI4YTQuODksNC44OSwwLDAsMSwwLS41NFYzLjEyQS40My40MywwLDAsMSwyLjY2LDIuNjlaIiBmaWxsPSIjNTBlNmZmIiAvPjxwYXRoIGQ9Ik0xNS43Miw5SDl2OC4yNUg5YS4zOS4zOSwwLDAsMCwuMTgtLjA2QzEwLjM0LDE2LjUsMTUuMzIsMTMuMTgsMTUuNzIsOVoiIGZpbGw9IiM1MGU2ZmYiIC8+PC9zdmc+" />
+  <text x="755" y="538" text-anchor="middle" class="label">NSG1</text>
+  <text x="755" y="554" text-anchor="middle" class="tiny">attached to workload-snet1</text>
+  <text x="735" y="582" text-anchor="middle" class="fault">FAULT (M2):</text>
+  <text x="735" y="596" text-anchor="middle" class="fault">DenyCrossVNetOutbound</text>
+  <text x="735" y="608" text-anchor="middle" class="tiny">priority 4096 · blocks → VNet2</text>
+
+  <!-- VM1 -->
+  <rect x="430" y="575" width="170" height="85" rx="8" class="card" />
+  <image x="442" y="585" width="34" height="34" href="data:image/svg+xml;base64,PHN2ZyBpZD0iZmQ0NTRmMWMtNTUwNi00NGI4LTg3NGUtODgxNGI4YjJmNzBiIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgdmlld0JveD0iMCAwIDE4IDE4Ij48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImYzNGQ5NTY5LTJiZDAtNDAwMi04ZjE2LTNkMDFkODEwNmNiNSIgeDE9IjguODgiIHkxPSIxMi4yMSIgeDI9IjguODgiIHkyPSIwLjIxIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjMDA3OGQ0IiAvPjxzdG9wIG9mZnNldD0iMC44MiIgc3RvcC1jb2xvcj0iIzVlYTBlZiIgLz48L2xpbmVhckdyYWRpZW50PjxsaW5lYXJHcmFkaWVudCBpZD0iYmRiNDVhMGItZWI1OC00OTcwLWE2MGEtZmIyY2UzMTRmODY2IiB4MT0iOC44OCIgeTE9IjE2Ljg0IiB4Mj0iOC44OCIgeTI9IjEyLjIxIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHN0b3Agb2Zmc2V0PSIwLjE1IiBzdG9wLWNvbG9yPSIjY2NjIiAvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzcwNzA3MCIgLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48dGl0bGU+SWNvbi1jb21wdXRlLTIxPC90aXRsZT48cmVjdCB4PSItMC4xMiIgeT0iMC4yMSIgd2lkdGg9IjE4IiBoZWlnaHQ9IjEyIiByeD0iMC42IiBmaWxsPSJ1cmwoI2YzNGQ5NTY5LTJiZDAtNDAwMi04ZjE2LTNkMDFkODEwNmNiNSkiIC8+PHBvbHlnb24gcG9pbnRzPSIxMS44OCA0LjQ2IDExLjg4IDcuOTUgOC44OCA5LjcxIDguODggNi4yMSAxMS44OCA0LjQ2IiBmaWxsPSIjNTBlNmZmIiAvPjxwb2x5Z29uIHBvaW50cz0iMTEuODggNC40NiA4Ljg4IDYuMjIgNS44OCA0LjQ2IDguODggMi43MSAxMS44OCA0LjQ2IiBmaWxsPSIjYzNmMWZmIiAvPjxwb2x5Z29uIHBvaW50cz0iOC44OCA2LjIyIDguODggOS43MSA1Ljg4IDcuOTUgNS44OCA0LjQ2IDguODggNi4yMiIgZmlsbD0iIzljZWJmZiIgLz48cG9seWdvbiBwb2ludHM9IjUuODggNy45NSA4Ljg4IDYuMjEgOC44OCA5LjcxIDUuODggNy45NSIgZmlsbD0iI2MzZjFmZiIgLz48cG9seWdvbiBwb2ludHM9IjExLjg4IDcuOTUgOC44OCA2LjIxIDguODggOS43MSAxMS44OCA3Ljk1IiBmaWxsPSIjOWNlYmZmIiAvPjxwYXRoIGQ9Ik0xMi40OSwxNS44NGMtMS43OC0uMjgtMS44NS0xLjU2LTEuODUtMy42M0g3LjExYzAsMi4wNy0uMDYsMy4zNS0xLjg0LDMuNjNhMSwxLDAsMCwwLS44OSwxaDlBMSwxLDAsMCwwLDEyLjQ5LDE1Ljg0WiIgZmlsbD0idXJsKCNiZGI0NWEwYi1lYjU4LTQ5NzAtYTYwYS1mYjJjZTMxNGY4NjYpIiAvPjwvc3ZnPg==" />
+  <text x="535" y="595" text-anchor="middle" class="label">VM1 (Ubuntu 22.04)</text>
+  <text x="535" y="610" text-anchor="middle" class="tiny">Standard_D2alds_v7</text>
+  <text x="535" y="624" text-anchor="middle" class="tiny">+ AMA · UAI · DCR association</text>
+  <text x="535" y="638" text-anchor="middle" class="tiny">+ CpuSpikeCron · FillDataDisk</text>
+  <text x="535" y="652" text-anchor="middle" class="tiny">+ UploadTestBlob runCommand</text>
+
+  <!-- Data disk -->
+  <rect x="608" y="670" width="225" height="48" rx="8" class="card" />
+  <rect x="610" y="672" width="4" height="44" rx="2" fill="#8a8886" />
+  <text x="720" y="688" text-anchor="middle" class="label">Data Disk 4 GB · /mnt/data</text>
+  <text x="720" y="704" text-anchor="middle" class="tiny">LUN 0 · ext4</text>
+
+  <!-- VM1 faults -->
+  <text x="430" y="678" class="fault">FAULT (M1): CPU spike cron every 15 min</text>
+  <text x="430" y="694" class="fault">FAULT (M3): data disk filled &gt;80%</text>
+
+  <!-- VNet2 -->
+  <rect x="880" y="295" width="460" height="440" rx="14" class="vnet" />
+  <text x="895" y="317" class="section-vnet">VNet2 — 10.11.0.0/16</text>
+
+  <!-- workload-snet2 -->
+  <rect x="895" y="335" width="430" height="390" rx="10" class="sub" />
+  <text x="905" y="355" class="section-sub">workload-snet2 — 10.11.1.0/24</text>
+
+  <!-- NIC2 -->
+  <rect x="910" y="375" width="170" height="50" rx="8" class="card" />
+  <rect x="912" y="377" width="4" height="46" rx="2" fill="#0078d4" />
+  <text x="995" y="395" text-anchor="middle" class="label">NIC2</text>
+  <text x="995" y="411" text-anchor="middle" class="tiny">no public IP</text>
+
+  <!-- NSG2 -->
+  <rect x="1120" y="375" width="190" height="105" rx="8" class="card" />
+  <image x="1134" y="385" width="38" height="38" href="data:image/svg+xml;base64,PHN2ZyBpZD0iYjc1OTQzYmEtMWEzZi00ODVkLWI0NWQtM2ZlZTAwZWQ3ZTVlIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgdmlld0JveD0iMCAwIDE4IDE4Ij48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImZlNWNlNDNmLTI4MjMtNDYxNy1iYjU0LTU3ZGY5ZTc3ODM3MiIgeDE9IjkuMDEiIHkxPSIwLjc1IiB4Mj0iOS4wMSIgeTI9IjE3LjI1IiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjNWVhMGVmIiAvPjxzdG9wIG9mZnNldD0iMC4xOCIgc3RvcC1jb2xvcj0iIzU1OWNlYyIgLz48c3RvcCBvZmZzZXQ9IjAuNDciIHN0b3AtY29sb3I9IiMzYzkxZTUiIC8+PHN0b3Agb2Zmc2V0PSIwLjg0IiBzdG9wLWNvbG9yPSIjMTM4MGRhIiAvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzAwNzhkNCIgLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48dGl0bGU+SWNvbi1uZXR3b3JraW5nLTY3PC90aXRsZT48cGF0aCBkPSJNMTYuMzYsOC40YzAsNC44NC01Ljg1LDguNzQtNy4xMiw5LjUzYS40Ni40NiwwLDAsMS0uNDgsMGMtMS4yNy0uNzktNy4xMi00LjY5LTcuMTItOS41M1YyLjU4YS40Ni40NiwwLDAsMSwuNDUtLjQ2QzYuNjQsMiw1LjU5LDAsOSwwczIuMzYsMiw2LjkxLDIuMTJhLjQ2LjQ2LDAsMCwxLC40NS40NloiIGZpbGw9IiMwMDc4ZDQiIC8+PHBhdGggZD0iTTE1Ljc1LDguNDVjMCw0LjQ0LTUuMzYsOC02LjUzLDguNzRhLjQzLjQzLDAsMCwxLS40NCwwYy0xLjE3LS43Mi02LjUzLTQuMy02LjUzLTguNzRWMy4xMWEuNDIuNDIsMCwwLDEsLjQxLS40MkM2LjgzLDIuNTgsNS44Ny43NSw5LC43NXMyLjE3LDEuODMsNi4zNCwxLjk0YS40Mi40MiwwLDAsMSwuNDEuNDJaIiBmaWxsPSIjNmJiOWYyIiAvPjxwYXRoIGQ9Ik05LDlWLjc1YzMuMTMsMCwyLjE3LDEuODMsNi4zNCwxLjk0YS40My40MywwLDAsMSwuNDEuNDNWOC40NmE0Ljg5LDQuODksMCwwLDEsMCwuNTRaTTksOUgyLjI4Yy40LDQuMTgsNS4zOCw3LjUsNi41LDguMTlhLjM5LjM5LDAsMCwwLC4xOC4wNkg5WiIgZmlsbD0idXJsKCNmZTVjZTQzZi0yODIzLTQ2MTctYmI1NC01N2RmOWU3NzgzNzIpIiAvPjxwYXRoIGQ9Ik0yLjY2LDIuNjlDNi44MywyLjU4LDUuODcuNzUsOSwuNzVWOUgyLjI4YTQuODksNC44OSwwLDAsMSwwLS41NFYzLjEyQS40My40MywwLDAsMSwyLjY2LDIuNjlaIiBmaWxsPSIjNTBlNmZmIiAvPjxwYXRoIGQ9Ik0xNS43Miw5SDl2OC4yNUg5YS4zOS4zOSwwLDAsMCwuMTgtLjA2QzEwLjM0LDE2LjUsMTUuMzIsMTMuMTgsMTUuNzIsOVoiIGZpbGw9IiM1MGU2ZmYiIC8+PC9zdmc+" />
+  <text x="1235" y="403" text-anchor="middle" class="label">NSG2</text>
+  <text x="1235" y="419" text-anchor="middle" class="tiny">attached to workload-snet2</text>
+  <text x="1215" y="447" text-anchor="middle" class="fault">FAULT (M2):</text>
+  <text x="1215" y="461" text-anchor="middle" class="fault">DenyCrossVNetInbound</text>
+  <text x="1215" y="473" text-anchor="middle" class="tiny">priority 4096 · blocks ← VNet1</text>
+
+  <!-- VM2 -->
+  <rect x="910" y="440" width="170" height="85" rx="8" class="card" />
+  <image x="922" y="450" width="34" height="34" href="data:image/svg+xml;base64,PHN2ZyBpZD0iZmQ0NTRmMWMtNTUwNi00NGI4LTg3NGUtODgxNGI4YjJmNzBiIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgdmlld0JveD0iMCAwIDE4IDE4Ij48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImYzNGQ5NTY5LTJiZDAtNDAwMi04ZjE2LTNkMDFkODEwNmNiNSIgeDE9IjguODgiIHkxPSIxMi4yMSIgeDI9IjguODgiIHkyPSIwLjIxIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjMDA3OGQ0IiAvPjxzdG9wIG9mZnNldD0iMC44MiIgc3RvcC1jb2xvcj0iIzVlYTBlZiIgLz48L2xpbmVhckdyYWRpZW50PjxsaW5lYXJHcmFkaWVudCBpZD0iYmRiNDVhMGItZWI1OC00OTcwLWE2MGEtZmIyY2UzMTRmODY2IiB4MT0iOC44OCIgeTE9IjE2Ljg0IiB4Mj0iOC44OCIgeTI9IjEyLjIxIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHN0b3Agb2Zmc2V0PSIwLjE1IiBzdG9wLWNvbG9yPSIjY2NjIiAvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzcwNzA3MCIgLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48dGl0bGU+SWNvbi1jb21wdXRlLTIxPC90aXRsZT48cmVjdCB4PSItMC4xMiIgeT0iMC4yMSIgd2lkdGg9IjE4IiBoZWlnaHQ9IjEyIiByeD0iMC42IiBmaWxsPSJ1cmwoI2YzNGQ5NTY5LTJiZDAtNDAwMi04ZjE2LTNkMDFkODEwNmNiNSkiIC8+PHBvbHlnb24gcG9pbnRzPSIxMS44OCA0LjQ2IDExLjg4IDcuOTUgOC44OCA5LjcxIDguODggNi4yMSAxMS44OCA0LjQ2IiBmaWxsPSIjNTBlNmZmIiAvPjxwb2x5Z29uIHBvaW50cz0iMTEuODggNC40NiA4Ljg4IDYuMjIgNS44OCA0LjQ2IDguODggMi43MSAxMS44OCA0LjQ2IiBmaWxsPSIjYzNmMWZmIiAvPjxwb2x5Z29uIHBvaW50cz0iOC44OCA2LjIyIDguODggOS43MSA1Ljg4IDcuOTUgNS44OCA0LjQ2IDguODggNi4yMiIgZmlsbD0iIzljZWJmZiIgLz48cG9seWdvbiBwb2ludHM9IjUuODggNy45NSA4Ljg4IDYuMjEgOC44OCA5LjcxIDUuODggNy45NSIgZmlsbD0iI2MzZjFmZiIgLz48cG9seWdvbiBwb2ludHM9IjExLjg4IDcuOTUgOC44OCA2LjIxIDguODggOS43MSAxMS44OCA3Ljk1IiBmaWxsPSIjOWNlYmZmIiAvPjxwYXRoIGQ9Ik0xMi40OSwxNS44NGMtMS43OC0uMjgtMS44NS0xLjU2LTEuODUtMy42M0g3LjExYzAsMi4wNy0uMDYsMy4zNS0xLjg0LDMuNjNhMSwxLDAsMCwwLS44OSwxaDlBMSwxLDAsMCwwLDEyLjQ5LDE1Ljg0WiIgZmlsbD0idXJsKCNiZGI0NWEwYi1lYjU4LTQ5NzAtYTYwYS1mYjJjZTMxNGY4NjYpIiAvPjwvc3ZnPg==" />
+  <text x="1015" y="460" text-anchor="middle" class="label">VM2 (Ubuntu 22.04)</text>
+  <text x="1015" y="475" text-anchor="middle" class="tiny">Standard_D2alds_v7</text>
+  <text x="1015" y="489" text-anchor="middle" class="tiny">+ AMA · DCR association</text>
+  <text x="1015" y="503" text-anchor="middle" class="tiny">+ ncat -lk 1433 listener</text>
+  <text x="1015" y="517" text-anchor="middle" class="tiny">(sql-listener.service)</text>
+
+  <!-- VM2 module 2 hint -->
+  <rect x="910" y="545" width="400" height="160" rx="10" class="card-info" />
+  <text x="1110" y="568" text-anchor="middle" class="label" fill="#005a9e">Module 2 target</text>
+  <text x="1110" y="588" text-anchor="middle" class="small">Reach this listener from VM1 over the VNet peering.</text>
+  <text x="1110" y="606" text-anchor="middle" class="small">Students must add allow rules on <b>BOTH</b> NSGs:</text>
+  <text x="1110" y="624" text-anchor="middle" class="tiny">NSG1: Allow Outbound TCP 1433 → 10.11.0.0/16</text>
+  <text x="1110" y="640" text-anchor="middle" class="tiny">NSG2: Allow Inbound TCP 1433 ← 10.10.0.0/16</text>
+  <text x="1110" y="660" text-anchor="middle" class="tiny">verify with: nc -vz 10.11.1.4 1433</text>
+  <text x="1110" y="680" text-anchor="middle" class="tiny">(default deny rules at priority 4096 currently block this)</text>
+
+  <!-- ============================ -->
+  <!-- Lab RG bottom row            -->
+  <!-- ============================ -->
+  <!-- Storage Account card -->
+  <rect x="400" y="760" width="360" height="155" rx="10" class="card" />
+  <image x="416" y="772" width="44" height="44" href="data:image/svg+xml;base64,PHN2ZyBpZD0iZjJmMDQzNDktOGFlZS00NDEzLTg0YzktYTkwNTM2MTFiMzE5IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgdmlld0JveD0iMCAwIDE4IDE4Ij48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImFkNGM0Zjk2LTA5YWEtNGY5MS1iYTEwLTVjYjhhZDUzMGY3NCIgeDE9IjkiIHkxPSIxNS44MyIgeDI9IjkiIHkyPSI1Ljc5IiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjYjNiM2IzIiAvPjxzdG9wIG9mZnNldD0iMC4yNiIgc3RvcC1jb2xvcj0iI2MxYzFjMSIgLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiNlNmU2ZTYiIC8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHRpdGxlPkljb24tc3RvcmFnZS04NjwvdGl0bGU+PHBhdGggZD0iTS41LDUuNzloMTdhMCwwLDAsMCwxLDAsMHY5LjQ4YS41Ny41NywwLDAsMS0uNTcuNTdIMS4wN2EuNTcuNTcsMCwwLDEtLjU3LS41N1Y1Ljc5QTAsMCwwLDAsMSwuNSw1Ljc5WiIgZmlsbD0idXJsKCNhZDRjNGY5Ni0wOWFhLTRmOTEtYmExMC01Y2I4YWQ1MzBmNzQpIiAvPjxwYXRoIGQ9Ik0xLjA3LDIuMTdIMTYuOTNhLjU3LjU3LDAsMCwxLC41Ny41N1Y1Ljc5YTAsMCwwLDAsMSwwLDBILjVhMCwwLDAsMCwxLDAsMFYyLjczQS41Ny41NywwLDAsMSwxLjA3LDIuMTdaIiBmaWxsPSIjMzdjMmIxIiAvPjxwYXRoIGQ9Ik0yLjgxLDYuODlIMTUuMThhLjI3LjI3LDAsMCwxLC4yNi4yN3YxLjRhLjI3LjI3LDAsMCwxLS4yNi4yN0gyLjgxYS4yNy4yNywwLDAsMS0uMjYtLjI3VjcuMTZBLjI3LjI3LDAsMCwxLDIuODEsNi44OVoiIGZpbGw9IiNmZmYiIC8+PHBhdGggZD0iTTIuODIsOS42OEgxNS4xOWEuMjcuMjcsMCwwLDEsLjI2LjI3djEuNDFhLjI3LjI3LDAsMCwxLS4yNi4yN0gyLjgyYS4yNy4yNywwLDAsMS0uMjYtLjI3VjEwQS4yNy4yNywwLDAsMSwyLjgyLDkuNjhaIiBmaWxsPSIjMzdjMmIxIiAvPjxwYXRoIGQ9Ik0yLjgyLDEyLjVIMTUuMTlhLjI3LjI3LDAsMCwxLC4yNi4yN3YxLjQxYS4yNy4yNywwLDAsMS0uMjYuMjdIMi44MmEuMjcuMjcsMCwwLDEtLjI2LS4yN1YxMi43N0EuMjcuMjcsMCwwLDEsMi44MiwxMi41WiIgZmlsbD0iIzI1ODI3NyIgLz48L3N2Zz4=" />
+  <text x="580" y="795" text-anchor="middle" class="label">Storage Account</text>
+  <text x="580" y="812" text-anchor="middle" class="tiny">StorageV2 · LRS · TLS 1.2 · no public blob access</text>
+  <text x="580" y="826" text-anchor="middle" class="tiny">Blob diagnostic setting → LAW (StorageBlobLogs)</text>
+  <rect x="490" y="838" width="180" height="22" rx="6" fill="#dff6dd" stroke="#107c10" stroke-width="1" />
+  <text x="580" y="853" text-anchor="middle" class="small">lab-data container (private)</text>
+  <text x="580" y="880" text-anchor="middle" class="fault">FAULT (M5): missing Department / Environment tags</text>
+  <text x="580" y="898" text-anchor="middle" class="fault">FAULT (M6): no Storage Blob Data Contributor for students</text>
+
+  <!-- Disk-usage Alert card -->
+  <rect x="780" y="760" width="280" height="155" rx="10" class="card" />
+  <rect x="782" y="762" width="4" height="151" rx="2" fill="#d13438" />
+  <text x="920" y="788" text-anchor="middle" class="label">Disk-Usage Alert</text>
+  <text x="920" y="806" text-anchor="middle" class="tiny">Scheduled Query Rule on LAW Perf</text>
+  <text x="920" y="822" text-anchor="middle" class="tiny">VM1 /mnt/data &gt; 80% → fires every 5 min</text>
+  <rect x="800" y="838" width="240" height="60" rx="8" class="card-info" />
+  <text x="920" y="858" text-anchor="middle" class="label" fill="#005a9e">Action Group</text>
+  <text x="920" y="874" text-anchor="middle" class="tiny">{labName}-disk-ag</text>
+  <text x="920" y="888" text-anchor="middle" class="tiny">email notification</text>
+
+  <!-- Student RBAC (optional) card -->
+  <rect x="1080" y="760" width="260" height="155" rx="10" class="card-info" />
+  <text x="1210" y="785" text-anchor="middle" class="label" fill="#005a9e">Student RBAC (optional)</text>
+  <text x="1210" y="803" text-anchor="middle" class="tiny">enabled when studentPrincipalId is set</text>
+  <text x="1095" y="828" class="small">• Contributor on Lab RG</text>
+  <text x="1095" y="848" class="small">• Scoped RBAC Administrator on Storage</text>
+  <text x="1110" y="864" class="tiny">ABAC: only assignable roles are</text>
+  <text x="1110" y="880" class="tiny">Storage Blob Data Reader + Contributor</text>
+  <text x="1095" y="900" class="small">→ teaches data-plane RBAC for M6</text>
+
+  <!-- ============================ -->
+  <!-- Edges                        -->
+  <!-- ============================ -->
+  <!-- Activity Log -> LAW -->
+  <path d="M 1060 210 C 1060 240 200 270 200 296" class="edge" />
+  <rect x="600" y="244" width="120" height="16" rx="3" class="edge-label" stroke="#0078d4" stroke-width="0.5" />
+  <text x="660" y="256" text-anchor="middle" class="tiny">diagnostic setting</text>
+
+  <!-- DCR -> LAW (within shared RG, short up arrow) -->
+  <path d="M 200 372 L 200 360" class="edge" />
+  <text x="220" y="368" class="tiny">data flow</text>
+
+  <!-- MI -> Lab RG (Contributor) -->
+  <path d="M 340 478 C 360 478 372 478 384 478" class="edge" />
+  <text x="346" y="471" class="tiny">Contributor (RG)</text>
+
+  <!-- MI -> Storage (Blob Data Contributor) -->
+  <path d="M 340 488 C 360 600 380 760 400 790" class="edge" />
+  <text x="358" y="660" class="tiny" transform="rotate(70 358 660)">Blob Data Contributor</text>
+
+  <!-- VNet1 <-> VNet2 peering -->
+  <path d="M 860 460 L 880 460" class="edge-peer" />
+  <text x="870" y="450" text-anchor="middle" class="tiny" fill="#5c2d91" font-weight="600">peering</text>
+  <text x="870" y="475" text-anchor="middle" class="fault">NSGs deny 1433</text>
+
+  <!-- Bastion -> VM1 (SSH) -->
+  <path d="M 525 445 L 525 510 L 535 510 L 535 575" class="edge-soft" />
+  <text x="540" y="468" class="tiny">SSH</text>
+
+  <!-- Bastion -> VM2 (SSH over peering) -->
+  <path d="M 620 410 C 750 410 850 410 910 460" class="edge-soft" />
+  <text x="750" y="395" text-anchor="middle" class="tiny">SSH (over peering)</text>
+
+  <!-- VM1 -> DCR (AMA + assoc) -->
+  <path d="M 430 615 C 360 615 340 460 340 404" class="edge-soft" />
+  <text x="350" y="500" class="tiny" transform="rotate(-90 350 500)">AMA + DCR assoc</text>
+
+  <!-- VM2 -> DCR (across to shared RG) -->
+  <path d="M 910 470 C 600 720 360 460 340 412" class="edge-soft" />
+
+  <!-- VM1 -> Storage (boot diag + blob upload) -->
+  <path d="M 510 660 L 510 760" class="edge-soft" />
+  <text x="515" y="710" class="tiny">boot diag + blob upload</text>
+
+  <!-- VM2 -> Storage (boot diag) -->
+  <path d="M 1000 525 C 1000 700 780 750 700 760" class="edge-soft" />
+  <text x="900" y="700" class="tiny">boot diag</text>
+
+  <!-- Storage -> LAW (blob diag) -->
+  <path d="M 400 815 C 280 815 200 600 200 360" class="edge" />
+  <text x="220" y="600" class="tiny" transform="rotate(-90 220 600)">blob diag → LAW</text>
+
+  <!-- Alert -> LAW (KQL on Perf) -->
+  <path d="M 780 800 C 600 800 300 500 200 350" class="edge" />
+  <text x="500" y="660" class="tiny" transform="rotate(-30 500 660)">KQL on Perf</text>
+
+  <!-- Flow log -> VNet1 (captures) -->
+  <path d="M 340 700 C 400 700 400 600 400 530" class="edge-soft" />
+  <text x="380" y="595" class="tiny" transform="rotate(-90 380 595)">captures</text>
+
+  <!-- Flow log -> Storage (logs) and LAW (analytics) -->
+  <path d="M 340 760 L 400 800" class="edge-soft" />
+  <text x="345" y="775" class="tiny">flow logs → SA</text>
+
+  <!-- ============================ -->
+  <!-- Module legend (bottom)       -->
+  <!-- ============================ -->
+  <rect x="40" y="945" width="1320" height="110" rx="10" class="card-legend" />
+  <text x="60" y="970" class="label">Fault → Module map</text>
+  <text x="60" y="993" class="small"><tspan font-weight="700">M1</tspan> VM Performance</text>
+  <text x="220" y="993" class="small"><tspan font-weight="700">M2</tspan> Network Connectivity</text>
+  <text x="420" y="993" class="small"><tspan font-weight="700">M3</tspan> Disk Capacity</text>
+  <text x="600" y="993" class="small"><tspan font-weight="700">M4</tspan> Azure Monitor &amp; KQL</text>
+  <text x="60" y="1015" class="small"><tspan font-weight="700">M5</tspan> Cost &amp; Policy</text>
+  <text x="220" y="1015" class="small"><tspan font-weight="700">M6</tspan> RBAC Data Plane</text>
+  <text x="420" y="1015" class="small"><tspan font-weight="700">M7</tspan> Storage Access Audit</text>
+  <text x="600" y="1015" class="small"><tspan font-weight="700">M8</tspan> Change Tracking</text>
+  <text x="60" y="1040" class="tiny">Dashed boxes = resource groups · Purple boxes = VNets · Dashed inner boxes = subnets · Red italics = injected fault · Dashed arrows = data flow · Solid arrows = configuration / RBAC</text>
 </svg>
