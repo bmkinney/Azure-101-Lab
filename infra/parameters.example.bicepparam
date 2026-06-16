@@ -19,9 +19,12 @@ param adminPassword = '<REPLACE-with-strong-password>'
 param studentPrincipalId = ''
 param studentPrincipalType = 'Group'
 
-// Contact email for budget alerts and metric alert notifications.
-// Leave empty to skip budget and alert email configuration.
-param alertEmail = ''
+// Contact emails for budget alerts and metric alert notifications.
+// Accepts one or more addresses. Use a distro group when available; otherwise list
+// individual addresses. Leave empty to skip budget and alert email configuration.
+// Single:   param alertEmail = ['proctor@contoso.com']
+// Multiple: param alertEmail = ['proctor@contoso.com', 'instructor@contoso.com']
+param alertEmail = []
 
 // VM size for lab VMs. Override if Standard_D2alds_v7 is unavailable in your region.
 // param vmSize = 'Standard_D2alds_v7'
