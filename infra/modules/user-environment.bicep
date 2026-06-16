@@ -29,8 +29,8 @@ param adminPassword string
 @description('Resource ID of the shared Log Analytics workspace.')
 param logAnalyticsWorkspaceId string
 
-@description('Contact email for metric alert notifications. Leave empty to skip alerts.')
-param alertEmail string = ''
+@description('Contact emails for metric alert notifications. Accepts one or more addresses. Leave empty to skip alerts.')
+param alertEmail array = []
 
 @description('VM size for both lab VMs.')
 param vmSize string = 'Standard_D2alds_v7'
@@ -591,12 +591,11 @@ resource diskAlertActionGroup 'Microsoft.Insights/actionGroups@2023-01-01' = if 
   properties: {
     groupShortName: 'DiskAlert'
     enabled: true
-    emailReceivers: [
-      {
-        name: 'StudentEmail'
-        emailAddress: alertEmail
-      }
-    ]
+    emailReceivers: [for (email, i) in alertEmail: {
+      name: 'StudentEmail${i}'
+      emailAddress: email
+      useCommonAlertSchema: false
+    }]
   }
 }
 

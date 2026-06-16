@@ -35,8 +35,8 @@ param studentPrincipalId string = ''
 @allowed(['Group', 'User'])
 param studentPrincipalType string = 'Group'
 
-@description('Contact email for budget and metric alert notifications.')
-param alertEmail string = ''
+@description('Contact emails for budget and metric alert notifications. Accepts one or more addresses. Leave empty to skip.')
+param alertEmail array = []
 
 @description('Budget start date (first of current month). Auto-generated - do not override.')
 param budgetStartDate string = '${substring(utcNow('yyyy-MM-dd'), 0, 8)}01'
@@ -104,14 +104,14 @@ resource labBudget 'Microsoft.Consumption/budgets@2023-11-01' = if (!empty(alert
         enabled: true
         operator: 'GreaterThanOrEqualTo'
         threshold: 80
-        contactEmails: [alertEmail]
+        contactEmails: alertEmail
         thresholdType: 'Actual'
       }
       actual100pct: {
         enabled: true
         operator: 'GreaterThanOrEqualTo'
         threshold: 100
-        contactEmails: [alertEmail]
+        contactEmails: alertEmail
         thresholdType: 'Actual'
       }
     }
