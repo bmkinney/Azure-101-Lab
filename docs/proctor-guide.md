@@ -184,7 +184,32 @@ Contributor on the resource group (assigned via Bicep) handles resource modifica
 | Activity Log diag setting | Forwards Activity Log to Log Analytics |
 
 ---
+## Cost management (between lab sessions)
 
+The lab VMs and Bastion generate ~$216/month if left running. Use the management scripts to stop resources between sessions and restart before the next lab.
+
+> **Windows users:** These are Bash scripts (`.sh`). They will not run directly in PowerShell or Command Prompt — Windows will open them in a text editor instead. Use one of:
+> - **Git Bash** (included with Git for Windows): `bash ./scripts/lab-status.sh -g azure101lab-rg`
+> - **WSL**: `wsl bash ./scripts/lab-status.sh -g azure101lab-rg`
+> - **Azure Cloud Shell** (Bash): scripts run natively
+>
+> All scripts require Azure CLI (`az`) to be installed and authenticated (`az login`).
+
+```bash
+# Check current resource state and estimated hourly cost
+./scripts/lab-status.sh -g azure101lab-rg
+
+# Stop all cost-generating resources (deallocate VMs, delete Bastion + PIP)
+./scripts/lab-stop.sh -g azure101lab-rg
+
+# Start resources ~30 min before the next lab (start VMs, recreate Bastion + PIP)
+./scripts/lab-start.sh -g azure101lab-rg
+```
+
+**Warm-up timing:** Start resources 30 minutes before the lab. VMs boot in ~2 min but Azure Monitor Agent needs 15-20 min to populate Log Analytics with metrics and logs for alerts to fire.
+
+**GitHub Actions (optional):** If your environment includes GitHub Actions, use the `lab-manage.yml` workflow (Actions tab > "Lab Environment Management") for push-button start/stop/status/teardown. Requires OIDC federated credentials (`AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID` secrets).
+---
 ## Baked-in faults
 
 **Do not fix these before the lab.** They are the lab exercises.
@@ -312,32 +337,6 @@ Contributor on the resource group (assigned via Bicep) handles resource modifica
 **Teaching moments:** Activity Log vs Resource Graph, change attribution, audit compliance.
 
 ---
-
-## Cost management (between lab sessions)
-
-The lab VMs and Bastion generate ~$216/month if left running. Use the management scripts to stop resources between sessions and restart before the next lab.
-
-> **Windows users:** These are Bash scripts (`.sh`). They will not run directly in PowerShell or Command Prompt — Windows will open them in a text editor instead. Use one of:
-> - **Git Bash** (included with Git for Windows): `bash ./scripts/lab-status.sh -g azure101lab-rg`
-> - **WSL**: `wsl bash ./scripts/lab-status.sh -g azure101lab-rg`
-> - **Azure Cloud Shell** (Bash): scripts run natively
->
-> All scripts require Azure CLI (`az`) to be installed and authenticated (`az login`).
-
-```bash
-# Check current resource state and estimated hourly cost
-./scripts/lab-status.sh -g azure101lab-rg
-
-# Stop all cost-generating resources (deallocate VMs, delete Bastion + PIP)
-./scripts/lab-stop.sh -g azure101lab-rg
-
-# Start resources ~30 min before the next lab (start VMs, recreate Bastion + PIP)
-./scripts/lab-start.sh -g azure101lab-rg
-```
-
-**Warm-up timing:** Start resources 30 minutes before the lab. VMs boot in ~2 min but Azure Monitor Agent needs 15-20 min to populate Log Analytics with metrics and logs for alerts to fire.
-
-**GitHub Actions (optional):** If your environment includes GitHub Actions, use the `lab-manage.yml` workflow (Actions tab > "Lab Environment Management") for push-button start/stop/status/teardown. Requires OIDC federated credentials (`AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID` secrets).
 
 ## Teardown
 
