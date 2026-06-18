@@ -57,7 +57,7 @@
 ### 3:50–4:00 — Wrap-up
 - recap findings and key learnings
 - discuss real-world parallels
-- confirm teardown plan
+- proctor runs `./scripts/lab-stop.sh -g azure101lab-rg` to stop billing (or `./scripts/lab-teardown.sh` if this is the final session)
 
 ## Condensed agenda (core modules only)
 

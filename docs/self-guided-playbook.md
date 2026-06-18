@@ -134,4 +134,5 @@ After completing the lab:
 
 - Save your notes for the recap discussion
 - Note which scenarios were most helpful
-- Your proctor will handle resource cleanup
+- Your proctor will handle resource cleanup using `./scripts/lab-stop.sh` (between sessions) or `./scripts/lab-teardown.sh` (final cleanup)
+- Do not run teardown unless instructed — the proctor manages the lifecycle
