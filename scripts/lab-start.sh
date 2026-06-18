@@ -51,7 +51,7 @@ VNET_NAME="${LAB_NAME}-vnet1"
 
 # Auto-detect location from resource group if not provided
 if [[ -z "$LOCATION" ]]; then
-  LOCATION=$(az group show --name "$RESOURCE_GROUP" --query "location" -o tsv)
+  LOCATION=$(az group show --name "$RESOURCE_GROUP" --query "location" -o tsv | tr -d '\r')
 fi
 
 echo "╔══════════════════════════════════════════════════════════════╗"
@@ -71,7 +71,7 @@ start_vm() {
   local vm_name=$1
   local status
   status=$(az vm get-instance-view --resource-group "$RESOURCE_GROUP" --name "$vm_name" \
-    --query "instanceView.statuses[?starts_with(code,'PowerState/')].displayStatus" -o tsv 2>/dev/null || echo "NotFound")
+    --query "instanceView.statuses[?starts_with(code,'PowerState/')].displayStatus" -o tsv 2>/dev/null | tr -d '\r' || echo "NotFound")
 
   if [[ "$status" == "VM running" ]]; then
     echo "  ✓ $vm_name already running"
@@ -96,7 +96,7 @@ echo "  ✓ VMs running"
 echo ""
 echo "▶ Ensuring Bastion Public IP exists..."
 
-pip_exists=$(az network public-ip show --resource-group "$RESOURCE_GROUP" --name "$BASTION_PIP_NAME" --query "name" -o tsv 2>/dev/null || echo "")
+pip_exists=$(az network public-ip show --resource-group "$RESOURCE_GROUP" --name "$BASTION_PIP_NAME" --query "name" -o tsv 2>/dev/null | tr -d '\r' || echo "")
 
 if [[ -z "$pip_exists" ]]; then
   echo "  ⏳ Creating Public IP: $BASTION_PIP_NAME..."
@@ -116,7 +116,7 @@ fi
 echo ""
 echo "▶ Ensuring Azure Bastion exists..."
 
-bastion_exists=$(az network bastion show --resource-group "$RESOURCE_GROUP" --name "$BASTION_NAME" --query "name" -o tsv 2>/dev/null || echo "")
+bastion_exists=$(az network bastion show --resource-group "$RESOURCE_GROUP" --name "$BASTION_NAME" --query "name" -o tsv 2>/dev/null | tr -d '\r' || echo "")
 
 if [[ -z "$bastion_exists" ]]; then
   echo "  ⏳ Creating Bastion: $BASTION_NAME (this takes 3-5 minutes)..."

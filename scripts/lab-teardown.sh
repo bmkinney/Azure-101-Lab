@@ -54,15 +54,15 @@ VNET2_FLOWLOG="${LAB_NAME}-vnet2-flowlog"
 
 # Auto-detect location from lab RG if not provided
 if [[ -z "$LOCATION" ]]; then
-  LOCATION=$(az group show --name "$RESOURCE_GROUP" --query "location" -o tsv 2>/dev/null || echo "")
+  LOCATION=$(az group show --name "$RESOURCE_GROUP" --query "location" -o tsv 2>/dev/null | tr -d '\r' || echo "")
   if [[ -z "$LOCATION" ]]; then
     # Lab RG may already be gone, try shared RG
-    LOCATION=$(az group show --name "$SHARED_RG" --query "location" -o tsv 2>/dev/null || echo "")
+    LOCATION=$(az group show --name "$SHARED_RG" --query "location" -o tsv 2>/dev/null | tr -d '\r' || echo "")
   fi
 fi
 
-SUBSCRIPTION=$(az account show --query "name" -o tsv)
-SUBSCRIPTION_ID=$(az account show --query "id" -o tsv)
+SUBSCRIPTION=$(az account show --query "name" -o tsv | tr -d '\r')
+SUBSCRIPTION_ID=$(az account show --query "id" -o tsv | tr -d '\r')
 
 echo "╔══════════════════════════════════════════════════════════════╗"
 echo "║  Lab Cost Management — TEARDOWN                             ║"
@@ -106,13 +106,10 @@ delete_if_exists() {
 echo "▶ Removing VNet flow logs from NetworkWatcherRG..."
 
 if [[ -n "$LOCATION" ]]; then
-  WATCHER_NAME="NetworkWatcher_${LOCATION}"
   delete_if_exists "Deleting $VNET1_FLOWLOG" \
-    az network watcher flow-log delete --name "$VNET1_FLOWLOG" \
-    --network-watcher "$WATCHER_NAME" --resource-group "NetworkWatcherRG"
+    az network watcher flow-log delete --name "$VNET1_FLOWLOG" --location "$LOCATION"
   delete_if_exists "Deleting $VNET2_FLOWLOG" \
-    az network watcher flow-log delete --name "$VNET2_FLOWLOG" \
-    --network-watcher "$WATCHER_NAME" --resource-group "NetworkWatcherRG"
+    az network watcher flow-log delete --name "$VNET2_FLOWLOG" --location "$LOCATION"
 else
   echo "  ⚠ Location unknown, skipping flow log cleanup"
 fi
@@ -121,7 +118,7 @@ fi
 echo ""
 echo "▶ Deleting lab resource group: $RESOURCE_GROUP..."
 
-rg_exists=$(az group exists --name "$RESOURCE_GROUP" 2>/dev/null || echo "false")
+rg_exists=$(az group exists --name "$RESOURCE_GROUP" 2>/dev/null | tr -d '\r' || echo "false")
 if [[ "$rg_exists" == "true" ]]; then
   az group delete --name "$RESOURCE_GROUP" --yes --no-wait
   echo "  ✓ Deletion initiated (runs in background)"
@@ -133,7 +130,7 @@ fi
 echo ""
 echo "▶ Deleting shared resource group: $SHARED_RG..."
 
-shared_exists=$(az group exists --name "$SHARED_RG" 2>/dev/null || echo "false")
+shared_exists=$(az group exists --name "$SHARED_RG" 2>/dev/null | tr -d '\r' || echo "false")
 if [[ "$shared_exists" == "true" ]]; then
   az group delete --name "$SHARED_RG" --yes --no-wait
   echo "  ✓ Deletion initiated (runs in background)"

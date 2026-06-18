@@ -61,7 +61,7 @@ deallocate_vm() {
   local vm_name=$1
   local status
   status=$(az vm get-instance-view --resource-group "$RESOURCE_GROUP" --name "$vm_name" \
-    --query "instanceView.statuses[?starts_with(code,'PowerState/')].displayStatus" -o tsv 2>/dev/null || echo "NotFound")
+    --query "instanceView.statuses[?starts_with(code,'PowerState/')].displayStatus" -o tsv 2>/dev/null | tr -d '\r' || echo "NotFound")
 
   if [[ "$status" == "VM deallocated" ]]; then
     echo "  ✓ $vm_name already deallocated"
@@ -86,11 +86,11 @@ echo "  ✓ VMs deallocated"
 echo ""
 echo "▶ Removing Azure Bastion (cannot be stopped, must be deleted)..."
 
-bastion_exists=$(az network bastion show --resource-group "$RESOURCE_GROUP" --name "$BASTION_NAME" --query "name" -o tsv 2>/dev/null || echo "")
+bastion_exists=$(az network bastion show --resource-group "$RESOURCE_GROUP" --name "$BASTION_NAME" --query "name" -o tsv 2>/dev/null | tr -d '\r' || echo "")
 
 if [[ -n "$bastion_exists" ]]; then
   echo "  ⏳ Deleting $BASTION_NAME..."
-  az network bastion delete --resource-group "$RESOURCE_GROUP" --name "$BASTION_NAME" --no-wait
+  az network bastion delete --resource-group "$RESOURCE_GROUP" --name "$BASTION_NAME" --yes --no-wait
   echo "  ✓ Bastion deletion initiated"
 else
   echo "  ✓ Bastion already removed"
@@ -102,13 +102,13 @@ echo "▶ Removing Bastion Public IP..."
 
 # Wait briefly for Bastion delete to release the PIP
 sleep 5
-pip_exists=$(az network public-ip show --resource-group "$RESOURCE_GROUP" --name "$BASTION_PIP_NAME" --query "name" -o tsv 2>/dev/null || echo "")
+pip_exists=$(az network public-ip show --resource-group "$RESOURCE_GROUP" --name "$BASTION_PIP_NAME" --query "name" -o tsv 2>/dev/null | tr -d '\r' || echo "")
 
 if [[ -n "$pip_exists" ]]; then
   # PIP may still be attached if Bastion delete hasn't finished — retry with wait
   echo "  ⏳ Waiting for Bastion to fully delete before removing PIP..."
-  for i in {1..12}; do
-    bastion_check=$(az network bastion show --resource-group "$RESOURCE_GROUP" --name "$BASTION_NAME" --query "name" -o tsv 2>/dev/null || echo "")
+  for i in {1..30}; do
+    bastion_check=$(az network bastion show --resource-group "$RESOURCE_GROUP" --name "$BASTION_NAME" --query "name" -o tsv 2>/dev/null | tr -d '\r' || echo "")
     if [[ -z "$bastion_check" ]]; then break; fi
     sleep 10
   done

@@ -53,7 +53,7 @@ get_vm_status() {
   local vm_name=$1
   local status
   status=$(az vm get-instance-view --resource-group "$RESOURCE_GROUP" --name "$vm_name" \
-    --query "instanceView.statuses[?starts_with(code,'PowerState/')].displayStatus" -o tsv 2>/dev/null || echo "Not Found")
+    --query "instanceView.statuses[?starts_with(code,'PowerState/')].displayStatus" -o tsv 2>/dev/null | tr -d '\r' || echo "Not Found")
   echo "$status"
 }
 
@@ -68,11 +68,13 @@ printf "    %-30s %s\n" "$VM2_NAME" "$vm2_status"
 echo ""
 echo "  Azure Bastion:"
 bastion_state=$(az network bastion show --resource-group "$RESOURCE_GROUP" --name "$BASTION_NAME" \
-  --query "provisioningState" -o tsv 2>/dev/null || echo "Not Deployed")
+  --query "provisioningState" -o tsv 2>/dev/null | tr -d '\r' || echo "Not Deployed")
+if [[ -z "$bastion_state" ]]; then bastion_state="Not Deployed"; fi
 printf "    %-30s %s\n" "$BASTION_NAME" "$bastion_state"
 
 pip_state=$(az network public-ip show --resource-group "$RESOURCE_GROUP" --name "$BASTION_PIP_NAME" \
-  --query "provisioningState" -o tsv 2>/dev/null || echo "Not Deployed")
+  --query "provisioningState" -o tsv 2>/dev/null | tr -d '\r' || echo "Not Deployed")
+if [[ -z "$pip_state" ]]; then pip_state="Not Deployed"; fi
 printf "    %-30s %s\n" "$BASTION_PIP_NAME" "$pip_state"
 
 # ── Cost estimate ─────────────────────────────────────────────────────────────
