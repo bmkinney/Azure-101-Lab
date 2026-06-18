@@ -94,6 +94,15 @@ The lab VMs and Bastion generate ~$216/month if left running. Use the management
 - VMs are deallocated (compute charges stop, disks retained)
 - Bastion + Public IP are deleted (cannot be stopped, only deleted/recreated)
 
+```bash
+# After the lab is complete — permanently delete ALL resources
+./scripts/lab-teardown.sh -g azure101lab-rg
+```
+
+> ⚠️ **Teardown is irreversible.** It deletes both resource groups, the subscription budget,
+> policy assignments, activity log diagnostic settings, and VNet flow logs. The script
+> requires you to type the lab name to confirm (use `--yes` to skip in CI/CD).
+
 **Warm-up timing:** Start resources 30 minutes before the lab. VMs boot in ~2 min but Azure Monitor Agent needs 15-20 min to populate Log Analytics with metrics and logs for alerts to fire.
 
 **GitHub Actions (optional):** If your environment includes GitHub Actions, use the `lab-manage.yml` workflow for push-button start/stop via the Actions UI. Requires OIDC federated credentials (`AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID` secrets).
@@ -117,5 +126,6 @@ The lab VMs and Bastion generate ~$216/month if left running. Use the management
 - [scripts/lab-start.sh](scripts/lab-start.sh) — start VMs + recreate Bastion before lab
 - [scripts/lab-stop.sh](scripts/lab-stop.sh) — deallocate VMs + delete Bastion after lab
 - [scripts/lab-status.sh](scripts/lab-status.sh) — check current resource state
+- [scripts/lab-teardown.sh](scripts/lab-teardown.sh) — permanently delete all lab resources
 - [.github/workflows/lab-manage.yml](.github/workflows/lab-manage.yml) — optional GitHub Actions workflow
 - assets/ — diagrams and supporting visuals

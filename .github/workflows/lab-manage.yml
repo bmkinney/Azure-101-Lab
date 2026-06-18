@@ -11,6 +11,7 @@ on:
           - start
           - stop
           - status
+          - teardown
       resource_group:
         description: 'Lab resource group name'
         required: true
@@ -54,5 +55,8 @@ jobs:
               ;;
             status)
               ./scripts/lab-status.sh -g "${{ inputs.resource_group }}" -n "${{ inputs.lab_name }}"
+              ;;
+            teardown)
+              ./scripts/lab-teardown.sh -g "${{ inputs.resource_group }}" -n "${{ inputs.lab_name }}" --yes
               ;;
           esac
