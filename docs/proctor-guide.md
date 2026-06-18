@@ -317,6 +317,13 @@ Contributor on the resource group (assigned via Bicep) handles resource modifica
 
 The lab VMs and Bastion generate ~$216/month if left running. Use the management scripts to stop resources between sessions and restart before the next lab.
 
+> **Windows users:** These are Bash scripts (`.sh`). They will not run directly in PowerShell or Command Prompt — Windows will open them in a text editor instead. Use one of:
+> - **Git Bash** (included with Git for Windows): `bash ./scripts/lab-status.sh -g azure101lab-rg`
+> - **WSL**: `wsl bash ./scripts/lab-status.sh -g azure101lab-rg`
+> - **Azure Cloud Shell** (Bash): scripts run natively
+>
+> All scripts require Azure CLI (`az`) to be installed and authenticated (`az login`).
+
 ```bash
 # Check current resource state and estimated hourly cost
 ./scripts/lab-status.sh -g azure101lab-rg
