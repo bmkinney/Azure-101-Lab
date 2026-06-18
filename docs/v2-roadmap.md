@@ -20,7 +20,8 @@ The v1 goal is to prove the learning flow first:
 - reduce build-time variance across participants
 
 ### GitHub-based automation
-- add validate, plan, apply, and destroy workflows
+- ~~add validate, plan, apply, and destroy workflows~~ ✅ `lab-manage.yml` provides start/stop/status/teardown via workflow_dispatch
+- add deploy workflow for initial lab provisioning (see [issue #11](https://github.com/bmkinney/Azure-101-Lab/issues/11))
 - support customer fork and self-service delivery
 - support repeatable cohort resets
 

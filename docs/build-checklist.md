@@ -82,3 +82,23 @@ Use this checklist after running the Bicep deployment to confirm the lab environ
 - [ ] Bastion is provisioned in the lab RG
 - [ ] Resource count matches expected (~15 resources in lab RG)
 - [ ] VM credentials documented and ready to hand out to each group
+
+## Post-lab operations
+
+### Between sessions (cost management)
+
+- [ ] Run `./scripts/lab-status.sh -g azure101lab-rg` to confirm current state
+- [ ] Run `./scripts/lab-stop.sh -g azure101lab-rg` to deallocate VMs and delete Bastion/PIP
+- [ ] Verify status shows $0/hr estimated cost
+
+### Before next session (warm-up)
+
+- [ ] Run `./scripts/lab-start.sh -g azure101lab-rg` at least 30 minutes before the lab
+- [ ] Verify VMs are running and Bastion is recreated
+- [ ] Allow 15-20 min for Azure Monitor Agent to populate metrics and logs
+
+### After final session (teardown)
+
+- [ ] Run `./scripts/lab-teardown.sh -g azure101lab-rg` to permanently delete all resources
+- [ ] Verify both resource groups are deleted
+- [ ] Verify subscription-level resources (budget, policies, diagnostics) are removed

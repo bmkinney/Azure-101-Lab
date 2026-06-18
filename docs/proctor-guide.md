@@ -313,9 +313,41 @@ Contributor on the resource group (assigned via Bicep) handles resource modifica
 
 ---
 
+## Cost management (between lab sessions)
+
+The lab VMs and Bastion generate ~$216/month if left running. Use the management scripts to stop resources between sessions and restart before the next lab.
+
+```bash
+# Check current resource state and estimated hourly cost
+./scripts/lab-status.sh -g azure101lab-rg
+
+# Stop all cost-generating resources (deallocate VMs, delete Bastion + PIP)
+./scripts/lab-stop.sh -g azure101lab-rg
+
+# Start resources ~30 min before the next lab (start VMs, recreate Bastion + PIP)
+./scripts/lab-start.sh -g azure101lab-rg
+```
+
+**Warm-up timing:** Start resources 30 minutes before the lab. VMs boot in ~2 min but Azure Monitor Agent needs 15-20 min to populate Log Analytics with metrics and logs for alerts to fire.
+
+**GitHub Actions (optional):** If your environment includes GitHub Actions, use the `lab-manage.yml` workflow (Actions tab > "Lab Environment Management") for push-button start/stop/status/teardown. Requires OIDC federated credentials (`AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID` secrets).
+
 ## Teardown
 
-After the lab is complete, for each group subscription:
+After the lab is complete, use the teardown script for each group subscription. This permanently deletes all lab resources including both resource groups, subscription budget, policy assignments, activity log diagnostic settings, and VNet flow logs.
+
+```bash
+# Recommended: use the teardown script (handles everything)
+./scripts/lab-teardown.sh -g azure101lab-rg
+
+# Or skip confirmation in CI/CD
+./scripts/lab-teardown.sh -g azure101lab-rg --yes
+```
+
+> **Warning:** Teardown is irreversible. The script requires you to type the lab name to confirm deletion unless `--yes` is passed.
+
+<details>
+<summary>Manual teardown (if scripts are unavailable)</summary>
 
 ```bash
 # Delete lab resource groups
@@ -332,6 +364,8 @@ az consumption budget delete --budget-name "azure101lab-monthly-budget"
 # Verify
 az group list --query "[?starts_with(name, 'azure101lab')].name" --output tsv
 ```
+
+</details>
 
 ---
 

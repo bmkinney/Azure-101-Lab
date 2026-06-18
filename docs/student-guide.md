@@ -306,6 +306,6 @@ For each module, record:
 
 At the end of the lab:
 
-- your proctor will handle resource cleanup
+- your proctor will handle resource cleanup using the lab management scripts (`lab-stop.sh` or `lab-teardown.sh`)
 - confirm that you have saved your notes for the recap discussion
 - do not delete resources unless instructed by the proctor
