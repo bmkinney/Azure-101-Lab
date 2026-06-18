@@ -209,6 +209,7 @@ The lab VMs and Bastion generate ~$216/month if left running. Use the management
 **Warm-up timing:** Start resources 30 minutes before the lab. VMs boot in ~2 min but Azure Monitor Agent needs 15-20 min to populate Log Analytics with metrics and logs for alerts to fire.
 
 **GitHub Actions (optional):** If your environment includes GitHub Actions, use the `lab-manage.yml` workflow (Actions tab > "Lab Environment Management") for push-button start/stop/status/teardown. Requires OIDC federated credentials (`AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID` secrets).
+
 ---
 ## Baked-in faults
 
