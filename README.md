@@ -75,6 +75,29 @@ See [docs/proctor-guide.md](docs/proctor-guide.md) for full deployment and deliv
 | 7 | Storage Access Audit | Investigate blob access via StorageBlobLogs | 20 min |
 | 8 | Change Tracking | Activity Log + Resource Graph audit trail | 20 min |
 
+## Cost management (between lab sessions)
+
+The lab VMs and Bastion generate ~$216/month if left running. Use the management scripts to stop resources between sessions and restart before the next lab.
+
+```bash
+# Check current state
+./scripts/lab-status.sh -g azure101lab-rg
+
+# Stop all cost-generating resources (VMs + Bastion)
+./scripts/lab-stop.sh -g azure101lab-rg
+
+# Start resources ~30 min before the next lab
+./scripts/lab-start.sh -g azure101lab-rg
+```
+
+**What gets stopped:**
+- VMs are deallocated (compute charges stop, disks retained)
+- Bastion + Public IP are deleted (cannot be stopped, only deleted/recreated)
+
+**Warm-up timing:** Start resources 30 minutes before the lab. VMs boot in ~2 min but Azure Monitor Agent needs 15-20 min to populate Log Analytics with metrics and logs for alerts to fire.
+
+**GitHub Actions (optional):** If your environment includes GitHub Actions, use the `lab-manage.yml` workflow for push-button start/stop via the Actions UI. Requires OIDC federated credentials (`AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID` secrets).
+
 ## Project structure
 
 - [infra/main.bicep](infra/main.bicep) — Bicep deployment orchestrator (subscription-scoped)
@@ -91,4 +114,8 @@ See [docs/proctor-guide.md](docs/proctor-guide.md) for full deployment and deliv
 - [docs/answer-key.md](docs/answer-key.md) — proctor-only solutions for all 8 modules
 - [docs/v1-framework.md](docs/v1-framework.md) — original lab framework (historical)
 - [docs/v2-roadmap.md](docs/v2-roadmap.md) — deferred automation backlog
+- [scripts/lab-start.sh](scripts/lab-start.sh) — start VMs + recreate Bastion before lab
+- [scripts/lab-stop.sh](scripts/lab-stop.sh) — deallocate VMs + delete Bastion after lab
+- [scripts/lab-status.sh](scripts/lab-status.sh) — check current resource state
+- [.github/workflows/lab-manage.yml](.github/workflows/lab-manage.yml) — optional GitHub Actions workflow
 - assets/ — diagrams and supporting visuals
