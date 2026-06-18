@@ -1,0 +1,62 @@
+name: Lab Environment Management
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Action to perform'
+        required: true
+        type: choice
+        options:
+          - start
+          - stop
+          - status
+          - teardown
+      resource_group:
+        description: 'Lab resource group name'
+        required: true
+        default: 'azure101lab-rg'
+      lab_name:
+        description: 'Lab name prefix'
+        required: false
+        default: 'azure101lab'
+
+  # Optional: Uncomment and adjust for scheduled warm-up before recurring lab sessions.
+  # schedule:
+  #   - cron: '0 13 * * 1'   # Example: Start every Monday at 1 PM UTC (30 min before lab)
+
+permissions:
+  id-token: write   # Required for OIDC federated credentials
+  contents: read
+
+jobs:
+  manage-lab:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Run lab management script
+        run: |
+          chmod +x scripts/lab-*.sh
+          case "${{ inputs.action || 'start' }}" in
+            start)
+              ./scripts/lab-start.sh -g "${{ inputs.resource_group }}" -n "${{ inputs.lab_name }}"
+              ;;
+            stop)
+              ./scripts/lab-stop.sh -g "${{ inputs.resource_group }}" -n "${{ inputs.lab_name }}"
+              ;;
+            status)
+              ./scripts/lab-status.sh -g "${{ inputs.resource_group }}" -n "${{ inputs.lab_name }}"
+              ;;
+            teardown)
+              ./scripts/lab-teardown.sh -g "${{ inputs.resource_group }}" -n "${{ inputs.lab_name }}" --yes
+              ;;
+          esac
