@@ -23,7 +23,7 @@ Primary focus areas:
 - A subscription-scoped deployment creates a shared resource group and a single lab resource group
 - The lab resource group contains intentional faults for challenge-based troubleshooting
 - Students collaborate in breakout rooms on the same set of resources
-- Students have Contributor from the start — no mid-lab RBAC upgrade needed
+- Students have a custom **Azure 101 Lab Student** role (subscription-scoped) from the start — no mid-lab RBAC upgrade needed
 - Modules present a symptom and objective only — no hints, CLI commands, or task lists
 - Assume a sandbox subscription already exists for each group
 
@@ -39,7 +39,7 @@ Each group gets:
 - Metric alerts for disk capacity
 - Access to a shared Log Analytics workspace
 
-Subscription-level: Azure Policy (tag audit), budget ($50/month), Activity Log forwarding to LAW.
+Subscription-level: Azure Policy (tag Modify + remediation), budget ($50/month), Activity Log forwarding to LAW.
 
 Editable Draw.io source: [assets/azure-101-lab-topology.drawio](assets/azure-101-lab-topology.drawio)
 
@@ -70,8 +70,8 @@ See [docs/proctor-guide.md](docs/proctor-guide.md) for full deployment and deliv
 | 2 | Network Connectivity | No NSG rules for cross-VNet port 1433 | 30 min |
 | 3 | Disk Capacity | 4 GB data disk filled >80% | 30 min |
 | 4 | Azure Monitor & KQL | Produce evidence for Modules 1-3 | 30 min |
-| 5 | Cost & Policy | Missing tags, budget review | 30 min |
-| 6 | RBAC Data Plane | Contributor but no Storage Blob Data Contributor | 20 min |
+| 5 | Cost & Policy | Missing tags (Modify policy remediation), budget review | 30 min |
+| 6 | RBAC Data Plane | Custom role with no Storage Blob Data Contributor (and no storage key access) | 20 min |
 | 7 | Storage Access Audit | Investigate blob access via StorageBlobLogs | 20 min |
 | 8 | Change Tracking | Activity Log + Resource Graph audit trail | 20 min |
 

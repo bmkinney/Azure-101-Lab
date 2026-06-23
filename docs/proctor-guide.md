@@ -6,7 +6,7 @@ This guide is for the lab proctor delivering the Azure 101 Operations Lab. The l
 
 Each group of 3 students shares one Azure subscription and one resource group with a single set of resources. Students collaborate in a breakout room. The proctor deploys the Bicep template once per group subscription.
 
-Students have **Contributor** role from the start — there is no mid-lab RBAC upgrade. The RBAC challenge (Module 6) focuses on data-plane vs control-plane permissions.
+Students are assigned a custom **Azure 101 Lab Student** role at the subscription scope from the start — there is no mid-lab RBAC upgrade. The role is Contributor-equivalent control plane minus storage account key access and role-assignment writes, so the RBAC challenge (Module 6) still focuses on data-plane vs control-plane permissions.
 
 ## Prerequisites
 
@@ -127,18 +127,19 @@ az network bastion list \
 
 Expected: All VMs should be **running**. Bastion should exist in the lab RG.
 
-### Step 4 — Assign subscription Reader to students (for Module 5)
+### Step 4 — Verify student RBAC (assigned via Bicep)
 
-Students need **Reader** at the subscription scope for Cost Management and Policy Compliance views.
+When `studentPrincipalId` is set, the Bicep deployment assigns the custom **Azure 101 Lab Student** role at the subscription scope. No manual role assignment is required — students get everything they need (including subscription-level visibility for Cost Management and Policy Compliance) from this single role.
 
 ```bash
-az role assignment create \
+# Confirm the custom role assignment exists for the student group
+az role assignment list \
   --assignee <student-principal-id> \
-  --role "Reader" \
-  --scope "/subscriptions/<sub-id>"
+  --scope "/subscriptions/<sub-id>" \
+  --query "[].roleDefinitionName" -o tsv
 ```
 
-Contributor on the resource group (assigned via Bicep) handles resource modifications. Subscription Reader adds visibility into cost management, budgets, and policy compliance at the subscription level.
+The custom role is Contributor-equivalent control plane **minus** storage account key access (`listKeys`/`regenerateKey`) and role-assignment writes. Subscription scope gives students write access to the shared resource group (DCRs, diagnostic settings) for Module 4 and the ability to run policy remediation for Module 5. The only RBAC write they can perform is the ABAC-restricted Storage Blob Data grant on the lab storage account (Module 6).
 
 ---
 
@@ -171,7 +172,7 @@ Contributor on the resource group (assigned via Bicep) handles resource modifica
 | Bastion | `azure101lab-bastion` | SSH access to both VMs |
 | VM 1 | `azure101lab-vm1` | Ubuntu 22.04, Standard_D2alds_v7, 4 GB data disk |
 | VM 2 | `azure101lab-vm2` | Ubuntu 22.04, Standard_D2alds_v7, TCP listener on 1433 |
-| Storage Account | `azure101labst<unique>` | Blob container `lab-data`, boot diagnostics |
+| Storage Account | `azure101labst<unique>` | Blob container `lab-data`; shared-key access disabled (Entra ID auth only) |
 | VNet Flow Logs | Per VNet | Flow logs to Log Analytics (Traffic Analytics) |
 | Storage Diagnostics | On blob service | StorageBlobLogs to Log Analytics |
 
@@ -179,7 +180,7 @@ Contributor on the resource group (assigned via Bicep) handles resource modifica
 
 | Resource | Purpose |
 |---|---|
-| Azure Policy (Audit) | Tag enforcement for `Department` and `Environment` |
+| Azure Policy (Modify) | Add or replace `Department` and `Environment` tags (remediable) |
 | Budget ($50/month) | Spending threshold with email alerts at 80% and 100% |
 | Activity Log diag setting | Forwards Activity Log to Log Analytics |
 
@@ -247,15 +248,15 @@ The lab VMs and Bastion generate ~$216/month if left running. Use the management
 | Detail | Value |
 |---|---|
 | **What's wrong** | All resources missing `Department` and `Environment` tags |
-| **Impact** | Azure Policy shows non-compliant resources |
+| **Impact** | Azure Policy (Modify effect) shows non-compliant resources |
 | **What students see** | Policy → Compliance shows non-compliant count |
-| **Resolution** | Apply required tags to resources |
+| **Resolution** | Create a remediation task for each tag policy (portal or `az policy remediation create`). The Modify policy's managed identity stamps the missing tag. Students have the RBAC to trigger remediation at the subscription scope. |
 
 ### Fault 5 — No data-plane RBAC (Module 6)
 
 | Detail | Value |
 |---|---|
-| **What's wrong** | Students have Contributor (control plane) but not `Storage Blob Data Contributor` (data plane) |
+| **What's wrong** | Students have the custom Lab Student role (control plane) but not `Storage Blob Data Contributor` (data plane). The role also blocks storage account key access, and the account has shared-key auth disabled — so there is no key-based bypass. |
 | **Impact** | Cannot upload/download blobs |
 | **What students see** | 403 AuthorizationPermissionMismatch on blob upload |
 | **Resolution** | Self-assign `Storage Blob Data Contributor` on the storage account. The lab grants the student principal `Role Based Access Control Administrator` scoped to the storage account, with an ABAC condition limiting assignable roles to `Storage Blob Data Reader`/`Storage Blob Data Contributor`. No proctor intervention needed. |
@@ -309,9 +310,9 @@ The lab VMs and Bastion generate ~$216/month if left running. Use the management
 
 **Present:** "Review this environment for compliance and cost awareness."
 
-**Expected path:** Azure Policy → Compliance → non-compliant resources → apply tags → Cost Management → cost report by tag → review budget.
+**Expected path:** Azure Policy → Compliance → non-compliant resources → create a remediation task per tag policy → Cost Management → cost report by tag → review budget.
 
-**Teaching moments:** Tag governance, Azure Policy effects, Cost Management navigation, budget alerting.
+**Teaching moments:** Tag governance, Azure Policy Modify effect and remediation tasks, Cost Management navigation, budget alerting.
 
 ### Module 6 — RBAC Data Plane (20 min)
 
@@ -361,9 +362,17 @@ After the lab is complete, use the teardown script for each group subscription. 
 az group delete --name azure101lab-shared-rg --yes --no-wait
 az group delete --name azure101lab-rg --yes --no-wait
 
-# Policy assignments are at subscription scope — delete them
-az policy assignment delete --name "audit-department-tag"
-az policy assignment delete --name "audit-environment-tag"
+# Policy assignments are at subscription scope — delete them (and their
+# remediation-identity role assignments are removed with the assignments)
+az policy assignment delete --name "modify-department-tag"
+az policy assignment delete --name "modify-environment-tag"
+
+# Remove the custom student role assignment(s) and definition (subscription scope)
+ROLE="Azure 101 Lab Student - $(az account show --query id -o tsv)"
+for id in $(az role assignment list --role "$ROLE" --query "[].id" -o tsv); do
+  az role assignment delete --ids "$id"
+done
+az role definition delete --name "$ROLE"
 
 # Budget
 az consumption budget delete --budget-name "azure101lab-monthly-budget"

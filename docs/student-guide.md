@@ -24,7 +24,7 @@ By the end of the lab, participants should be able to:
 - each group of 3 students shares one Azure subscription and one resource group
 - your lab environment has been pre-deployed by the proctor
 - all group members collaborate on the same set of resources
-- you have Contributor access on your resource group (control-plane operations)
+- you have a custom **Azure 101 Lab Student** role at the subscription scope (control-plane operations; excludes storage account keys and role-assignment writes)
 - Azure Bastion is available for SSH access to your VMs
 
 ## Your assigned environment
@@ -210,18 +210,19 @@ When attempting to deploy a new resource, the deployment may fail or produce com
 
 ### Objective
 
-1. Identify all resources in your resource group that are non-compliant with tag policies and apply the required `Department` and `Environment` tags.
+1. Identify all resources in your resource group that are non-compliant with the tag policies (`Department` and `Environment`).
 2. Trigger an Azure Policy compliance scan to evaluate current resource compliance.
-3. Generate an Azure Cost Management report showing actual spend in the last 7 days, grouped by tag, at the subscription scope.
-4. Review the subscription budget and confirm alerts are configured with an action group.
+3. Create a **remediation task** for each tag policy so the policy's managed identity applies the required tags to existing resources (these policies use the Modify effect).
+4. Generate an Azure Cost Management report showing actual spend in the last 7 days, grouped by tag, at the subscription scope.
+5. Review the subscription budget and confirm alerts are configured with an action group.
 
 ### References
 
 - [Azure Policy overview](https://learn.microsoft.com/azure/governance/policy/overview)
+- [Remediate non-compliant resources](https://learn.microsoft.com/azure/governance/policy/how-to/remediate-resources)
 - [Trigger an on-demand compliance scan](https://learn.microsoft.com/azure/governance/policy/how-to/get-compliance-data#on-demand-compliance-scan-using-azure-cli)
 - [Quickstart: Explore and analyze costs](https://learn.microsoft.com/azure/cost-management-billing/costs/quick-acm-cost-analysis)
 - [Tutorial: Create and manage Azure budgets](https://learn.microsoft.com/azure/cost-management-billing/costs/tutorial-acm-create-budgets)
-- [Trigger compliance scan](https://learn.microsoft.com/azure/governance/policy/how-to/get-compliance-data#on-demand-compliance-scan-using-azure-cli)
 
 ---
 
@@ -236,7 +237,7 @@ You need to upload a configuration file to the storage account's `lab-data` blob
 
 ### Objective
 
-Identify why your Contributor role is insufficient for blob data operations. Assign the correct data-plane role to yourself on the storage account and successfully upload a file to the `lab-data` container.
+Identify why your custom Lab Student role is insufficient for blob data operations (and why the usual storage account key workaround is unavailable). Assign the correct data-plane role to yourself on the storage account and successfully upload a file to the `lab-data` container.
 
 ### References
 

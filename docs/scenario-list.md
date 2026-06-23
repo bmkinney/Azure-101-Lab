@@ -90,15 +90,15 @@ Azure Policy, tag governance, Cost Management, budgets
 
 ### Pre-deployed fault
 - All resources are missing required `Department` and `Environment` tags
-- Azure Policy (Audit effect) is assigned at subscription scope flagging non-compliance
+- Azure Policy (Modify effect) is assigned at subscription scope flagging non-compliance and supporting remediation
 - A subscription budget ($50/month) is deployed with alert thresholds
 
 ### Participant outcome
-The participant identifies non-compliant resources via Azure Policy, applies the required tags, generates an ACM cost report by tag, and reviews the budget configuration.
+The participant identifies non-compliant resources via Azure Policy, creates a remediation task so the policy's managed identity stamps the required tags, generates an ACM cost report by tag, and reviews the budget configuration.
 
 ### Evidence sources
 - Azure Policy → Compliance (non-compliant resource count)
-- Resource Tags blade
+- Azure Policy → Remediation (remediation task status)
 - Cost Management → Cost analysis (grouped by tag)
 - Cost Management → Budgets
 
@@ -108,7 +108,7 @@ The participant identifies non-compliant resources via Azure Policy, applies the
 Control-plane vs data-plane RBAC, storage blob access
 
 ### Pre-deployed fault
-- Students have Contributor role (control plane) but NOT `Storage Blob Data Contributor` (data plane)
+- Students have the custom **Azure 101 Lab Student** role (control plane) but NOT `Storage Blob Data Contributor` (data plane). Storage account key access is removed from the role and shared-key auth is disabled, so there is no key-based bypass.
 - A blob container `lab-data` exists with a pre-uploaded test file
 
 ### Participant outcome

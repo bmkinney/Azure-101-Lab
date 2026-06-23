@@ -73,7 +73,7 @@ echo "║  Lab RG          : $RESOURCE_GROUP"
 echo "║  Shared RG       : $SHARED_RG"
 echo "║  Location        : ${LOCATION:-unknown}"
 echo "║  Budget          : $BUDGET_NAME"
-echo "║  Policy          : audit-department-tag, audit-environment-tag"
+echo "║  Policy          : modify-department-tag, modify-environment-tag"
 echo "║  Diagnostic      : $DIAG_NAME"
 echo "╚══════════════════════════════════════════════════════════════╝"
 echo ""
@@ -149,13 +149,31 @@ delete_if_exists "Deleting budget: $BUDGET_NAME" \
 echo ""
 echo "▶ Removing policy assignments..."
 
-delete_if_exists "Deleting policy: audit-department-tag" \
-  az policy assignment delete --name "audit-department-tag"
+delete_if_exists "Deleting policy: modify-department-tag" \
+  az policy assignment delete --name "modify-department-tag"
 
-delete_if_exists "Deleting policy: audit-environment-tag" \
-  az policy assignment delete --name "audit-environment-tag"
+delete_if_exists "Deleting policy: modify-environment-tag" \
+  az policy assignment delete --name "modify-environment-tag"
 
-# ── 6. Remove activity log diagnostic setting ────────────────────────────────
+# ── 6. Remove custom student role (definition + assignment) ───────────────────
+echo ""
+echo "▶ Removing custom student role..."
+
+STUDENT_ROLE_NAME="Azure 101 Lab Student - $(az account show --query id --output tsv)"
+STUDENT_ROLE_ID=$(az role definition list --name "$STUDENT_ROLE_NAME" --query "[0].name" --output tsv 2>/dev/null || true)
+if [[ -n "${STUDENT_ROLE_ID:-}" ]]; then
+  # Remove any assignments of the custom role first, then the definition
+  for assignee in $(az role assignment list --role "$STUDENT_ROLE_NAME" --query "[].id" --output tsv 2>/dev/null || true); do
+    delete_if_exists "Deleting student role assignment: $assignee" \
+      az role assignment delete --ids "$assignee"
+  done
+  delete_if_exists "Deleting custom role definition: $STUDENT_ROLE_NAME" \
+    az role definition delete --name "$STUDENT_ROLE_NAME"
+else
+  echo "  ✓ Already removed"
+fi
+
+# ── 7. Remove activity log diagnostic setting ────────────────────────────────
 echo ""
 echo "▶ Removing activity log diagnostic setting..."
 

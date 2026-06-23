@@ -356,28 +356,31 @@ If students are unfamiliar with KQL, Log Analytics offers a **simple mode** visu
 
 ### What's wrong
 
-1. **Missing tags:** All resources in the lab resource group are missing the required `Department` and `Environment` tags. Azure Policy is assigned at the subscription scope to audit (not deny) resources missing these tags, so they show as non-compliant.
+1. **Missing tags:** All resources in the lab resource group are missing the required `Department` and `Environment` tags. Azure Policy is assigned at the subscription scope with the **Modify** effect ("Add or replace a tag on resources"), so non-compliant resources surface in the Compliance blade and can be fixed with a remediation task.
 2. **Budget:** A monthly budget of $50 is deployed at the subscription level with alerts at 80% and 100%.
 
 ### Solution steps
 
 #### Tag compliance
 1. Open Azure Policy → Compliance. Filter to your subscription.
-2. Find the two policy assignments: "Audit resources missing Department tag" and "Audit resources missing Environment tag".
+2. Find the two policy assignments: "Add or replace the Department tag" and "Add or replace the Environment tag" (Modify effect).
 3. Drill into the non-compliant resources.
 4. Trigger a manual policy compliance scan to evaluate current compliance:
    ```bash
    az policy state trigger-scan
    ```
-   (Note: This requires appropriate authorization. If it fails, ask your proctor to trigger it.)
-5. Apply tags to your resources via the portal (resource → Tags blade) or CLI:
+5. Create a **remediation task** for each policy so the policy's managed identity stamps the missing tag onto existing resources. Portal: Policy → Remediation → Create remediation task → pick the assignment. Or CLI:
    ```bash
-   az tag update \
-     --resource-id "<resource-id>" \
-     --operation merge \
-     --tags Department=Lab Environment=Training
+   az policy remediation create \
+     --name "remediate-department-tag" \
+     --policy-assignment "modify-department-tag"
+
+   az policy remediation create \
+     --name "remediate-environment-tag" \
+     --policy-assignment "modify-environment-tag"
    ```
-5. Trigger a policy compliance scan or wait for the next automatic evaluation.
+   The Modify policy's system-assigned identity (granted Contributor at subscription scope) applies the tag — no manual per-resource tagging required.
+6. Re-check Compliance after remediation completes; resources should move to compliant.
 
 #### Cost report
 6. Navigate to the subscription → Reporting + Analytics → Cost Management → Cost analysis at the subscription scope.
@@ -393,7 +396,7 @@ If students are unfamiliar with KQL, Log Analytics offers a **simple mode** visu
 ### Completion check
 
 - Non-compliant resources identified via Azure Policy
-- Tags applied to at least the VM and storage account
+- Remediation task created for each tag policy; resources become compliant
 - Cost analysis report generated with tag grouping
 - Budget reviewed and alert thresholds understood
 
@@ -403,17 +406,19 @@ If students are unfamiliar with KQL, Log Analytics offers a **simple mode** visu
 
 ### What's wrong
 
-Students have **Contributor** role on the resource group. Contributor grants control-plane permissions (manage resources, configure settings) but does NOT grant data-plane permissions for storage blob operations. Uploading, downloading, or listing blobs requires a data-plane role such as `Storage Blob Data Contributor`.
+Students have the custom **Azure 101 Lab Student** role at the subscription scope. It grants control-plane permissions (manage resources, configure settings) but does NOT grant data-plane permissions for storage blob operations. Uploading, downloading, or listing blobs requires a data-plane role such as `Storage Blob Data Contributor`.
+
+The usual control-plane "escape hatch" is also closed: the custom role removes `Microsoft.Storage/storageAccounts/listkeys/action` and `regeneratekey/action`, and the storage account has `allowSharedKeyAccess: false`. Students cannot retrieve an account key to authenticate with shared-key auth, so the only path to blob data is an Entra ID data-plane role assignment.
 
 ### What students can do
 
-Contributor by itself cannot write role assignments. To let students self-remediate without granting Owner, the lab also grants the student principal **Role Based Access Control Administrator** scoped only to the lab storage account, with an ABAC condition that restricts the roles they may grant to `Storage Blob Data Reader` and `Storage Blob Data Contributor`. Any attempt to assign Owner, User Access Administrator, or a role on a different resource will be denied by the condition — this is itself a teachable moment about ABAC and scoped RBAC Admin.
+The custom role by itself cannot write role assignments. To let students self-remediate without granting Owner, the lab also grants the student principal **Role Based Access Control Administrator** scoped only to the lab storage account, with an ABAC condition that restricts the roles they may grant to `Storage Blob Data Reader` and `Storage Blob Data Contributor`. Any attempt to assign Owner, User Access Administrator, or a role on a different resource will be denied by the condition — this is itself a teachable moment about ABAC and scoped RBAC Admin.
 
 ### Solution steps
 
 1. Navigate to the storage account → Containers → `lab-data`. Try to upload a file. Observe the 403 error.
 2. Open the storage account → Access Control (IAM).
-3. Click "View my access" — see that you have `Contributor` inherited from the resource group.
+3. Click "View my access" — see that you have the custom Lab Student role inherited from the subscription, but no Storage Blob Data role.
 4. Click Add → Add role assignment.
 5. Search for `Storage Blob Data Contributor` and select it.
 6. Assign it to yourself (Members → select your user account).

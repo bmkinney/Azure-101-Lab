@@ -28,7 +28,7 @@ param adminUsername string = 'azureuser'
 @description('Admin password for all lab VMs. Must meet Azure complexity requirements.')
 param adminPassword string
 
-@description('Optional: Object ID of a Microsoft Entra group or user to assign Contributor role on the lab RG. Leave empty to skip.')
+@description('Optional: Object ID of a Microsoft Entra group or user to assign the custom "Azure 101 Lab Student" role at the subscription scope. Leave empty to skip.')
 param studentPrincipalId string = ''
 
 @description('Principal type for the student RBAC assignment.')
@@ -76,7 +76,8 @@ module shared 'modules/shared.bicep' = {
 
 // ============================================================
 // POLICY: Tag enforcement at subscription scope
-// Audits resources missing required Department and Environment tags
+// Modify policy: marks resources missing Department/Environment tags as
+// non-compliant and stamps the tag when a remediation task runs (#16)
 // ============================================================
 
 module policy 'modules/policy.bicep' = {
@@ -250,29 +251,31 @@ module flowLogs 'modules/flow-logs.bicep' = {
 }
 
 // ============================================================
-// RBAC: Student Contributor on the lab RG (Optional)
-// Contributor covers control plane but NOT data plane (storage blob access)
-// The data-plane gap is the RBAC challenge in Module 6
+// RBAC: Student custom role at the subscription scope (Optional)
+// Replaces the old "Contributor on lab RG + manual subscription Reader" model.
+// The custom role is Contributor-equivalent control plane MINUS storage account
+// key access (listKeys/regenerateKey) and role-assignment writes:
+//   - No storage keys  -> students can't bypass the Module 6 data-plane lesson (#14)
+//   - Subscription scope -> students can edit shared-rg DCRs/diagnostics (#15) and
+//                           run subscription-scoped policy remediation (#16)
+//   - No data plane     -> Module 6 (control vs data plane) stays intact
 // ============================================================
 
-module studentContributor 'modules/role-assignment.bicep' = if (!empty(studentPrincipalId)) {
-  name: 'student-contributor'
-  scope: labRg
+module studentRole 'modules/student-role.bicep' = if (!empty(studentPrincipalId)) {
+  name: 'student-custom-role'
   params: {
     principalId: studentPrincipalId
-    builtInRoleId: 'b24988ac-6180-42a0-ab88-20f7382dd24c' // Contributor
     principalType: studentPrincipalType
   }
 }
 
 // ============================================================
 // RBAC: Scoped RBAC Admin on storage account (for Module 6)
-// Students have Contributor, which cannot write role assignments.
-// This grants RBAC Administrator scoped ONLY to the lab storage account,
-// with an ABAC condition limiting the roles they can grant to just
-// Storage Blob Data Reader/Contributor. They can self-remediate the
-// data-plane gap without being able to escalate to Owner or grant
-// any other role elsewhere.
+// The custom student role cannot write role assignments. This grants RBAC
+// Administrator scoped ONLY to the lab storage account, with an ABAC condition
+// limiting the roles they can grant to just Storage Blob Data Reader/Contributor.
+// They can self-remediate the data-plane gap without being able to escalate to
+// Owner or grant any other role elsewhere.
 // ============================================================
 
 module studentStorageRbacAdmin 'modules/storage-rbac-admin.bicep' = if (!empty(studentPrincipalId)) {

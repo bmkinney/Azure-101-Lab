@@ -15,7 +15,7 @@ Each group of 3 students shares one Azure subscription, one resource group, and 
 - 1 Bastion host (in VNet1 AzureBastionSubnet)
 - 2 NICs (one per VM, in respective workload subnets)
 - 2 Ubuntu VMs on `Standard_D2alds_v7` (VM1 with data disk, VM2 with TCP listener on 1433)
-- 1 storage account (blob container `lab-data`, boot diagnostics)
+- 1 storage account (blob container `lab-data`; shared-key access disabled — Entra ID data-plane auth only)
 - VNet flow logs for both VNets (Traffic Analytics enabled)
 - Storage diagnostic settings (StorageBlobLogs → LAW)
 - Metric alert (disk capacity >80% on VM1)
@@ -29,7 +29,8 @@ Each group of 3 students shares one Azure subscription, one resource group, and 
 
 ### Subscription-level resources
 
-- Azure Policy assignments (Audit: `Department` and `Environment` tags)
+- Azure Policy assignments (Modify: add or replace `Department` and `Environment` tags, with remediation identities)
+- Custom role definition (`Azure 101 Lab Student`) + assignment to the student principal at subscription scope
 - Budget ($50/month with 80% and 100% alert thresholds)
 - Activity Log diagnostic setting (forwards to LAW)
 
@@ -105,7 +106,7 @@ Check:
 ### RBAC data-plane problem (Module 6)
 Check:
 - IAM on storage account → role assignments
-- Control plane (Contributor) vs data plane (Storage Blob Data Contributor)
+- Control plane (custom Lab Student role) vs data plane (Storage Blob Data Contributor); storage keys/shared-key bypass disabled
 - Error message: 403 AuthorizationPermissionMismatch
 
 ### Storage access audit (Module 7)
