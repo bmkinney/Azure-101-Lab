@@ -286,6 +286,9 @@ resource nic2 'Microsoft.Network/networkInterfaces@2024-01-01' = {
 // STORAGE ACCOUNT — blob storage + boot diagnostics
 // FAULT: Intentionally missing Department and Environment tags (Module 5)
 // FAULT: No Storage Blob Data Contributor for students (Module 6)
+// HARDENING: shared-key access disabled so blob access requires an Entra ID
+//            data-plane role — students cannot bypass Module 6 with the account
+//            key (issue #14). Fault injection uploads use managed-identity auth.
 // ============================================================
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
@@ -299,6 +302,7 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
     minimumTlsVersion: 'TLS1_2'
     supportsHttpsTrafficOnly: true
     allowBlobPublicAccess: false
+    allowSharedKeyAccess: false
   }
 }
 
@@ -431,7 +435,6 @@ resource vm1 'Microsoft.Compute/virtualMachines@2024-07-01' = {
     diagnosticsProfile: {
       bootDiagnostics: {
         enabled: true
-        storageUri: storageAccount.properties.primaryEndpoints.blob
       }
     }
   }
@@ -483,7 +486,6 @@ resource vm2 'Microsoft.Compute/virtualMachines@2024-07-01' = {
     diagnosticsProfile: {
       bootDiagnostics: {
         enabled: true
-        storageUri: storageAccount.properties.primaryEndpoints.blob
       }
     }
   }

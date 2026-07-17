@@ -7,7 +7,7 @@ Use this checklist after running the Bicep deployment to confirm the lab environ
 - [ ] One Azure subscription per student group (3 students per group)
 - [ ] Owner or Contributor + User Access Administrator on each subscription
 - [ ] Parameters file created for each group with location, admin password, alertEmail
-- [ ] Student principal ID set for Contributor assignment
+- [ ] Student principal ID set for the custom Lab Student role assignment
 - [ ] Network Watcher registered in each subscription's target region
 
 ## Resource groups
@@ -47,7 +47,8 @@ Use this checklist after running the Bicep deployment to confirm the lab environ
 - [ ] Storage account (`azure101labst<unique>`) created
 - [ ] Blob container `lab-data` exists
 - [ ] Storage diagnostic settings enabled (StorageBlobLogs → LAW)
-- [ ] Boot diagnostics enabled on both VMs
+- [ ] Storage account has `allowSharedKeyAccess: false` (Entra ID data-plane auth only — Module 6)
+- [ ] Boot diagnostics enabled on both VMs (managed boot diagnostics — no storage account dependency)
 
 ### Monitoring
 
@@ -64,17 +65,18 @@ Use this checklist after running the Bicep deployment to confirm the lab environ
 
 ## Subscription-level resources
 
-- [ ] Azure Policy: `audit-department-tag` assignment active (DoNotEnforce — audit-only)
-- [ ] Azure Policy: `audit-environment-tag` assignment active (DoNotEnforce — audit-only)
+- [ ] Azure Policy: `modify-department-tag` assignment active (Modify effect — remediable)
+- [ ] Azure Policy: `modify-environment-tag` assignment active (Modify effect — remediable)
+- [ ] Each Modify policy assignment has a system-assigned identity granted **Contributor** at subscription scope (remediation identity)
 - [ ] Policy compliance scan completed (allow up to 30 minutes)
 - [ ] Budget (`azure101lab-monthly-budget`) set at $50/month with 80% and 100% thresholds
 - [ ] Activity Log diagnostic setting forwarding to LAW
 
 ## RBAC
 
-- [ ] Students have **Contributor** on the lab resource group (assigned via Bicep)
-- [ ] Students have **Reader** at subscription scope (for Cost Management / Policy views)
+- [ ] Students have the custom **Azure 101 Lab Student** role at subscription scope (assigned via Bicep) — Contributor-equivalent minus storage key access and role-assignment writes
 - [ ] Students do **not** have Storage Blob Data Contributor (intentional — Module 6 fault)
+- [ ] Student principal has **Role Based Access Control Administrator** scoped to the storage account with an ABAC condition limiting grants to Storage Blob Data Reader/Contributor
 
 ## Final checks
 

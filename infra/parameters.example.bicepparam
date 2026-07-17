@@ -12,9 +12,11 @@ param adminUsername = 'azureuser'
 param adminPassword = '<REPLACE-with-strong-password>'
 
 // Optional: Set to the Object ID of a Microsoft Entra group containing all students in this group.
-// This assigns Contributor role on the lab resource group.
-// Contributor covers control-plane operations but NOT storage data-plane (blob upload/download).
-// The data-plane gap is the RBAC challenge in Module 6.
+// This assigns a custom "Azure 101 Lab Student" role at the SUBSCRIPTION scope.
+// The role is Contributor-equivalent control plane MINUS storage account key access and
+// role-assignment writes — so students cannot bypass the Module 6 data-plane lesson with
+// the storage key, and cannot grant themselves higher roles. Subscription scope lets them
+// edit shared-rg DCRs/diagnostics (Module 4) and run policy remediation (Module 5).
 // Leave empty to skip RBAC assignment via Bicep.
 param studentPrincipalId = ''
 param studentPrincipalType = 'Group'

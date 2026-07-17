@@ -90,7 +90,7 @@ Use these checkpoints as you progress:
 
 ### Module 5 — Cost & Policy
 19. Reviewed Policy → Compliance for non-compliant resources
-20. Applied `Department` and `Environment` tags
+20. Created remediation tasks so the Modify policies stamp `Department` and `Environment` tags
 21. Reviewed Cost Management → Cost analysis
 22. Reviewed budget threshold and alerts
 
@@ -114,7 +114,7 @@ Use these checkpoints as you progress:
 - Not using Bastion to SSH — there are no public IPs on the VMs
 - Not checking both NSGs when debugging cross-VNet connectivity
 - Forgetting the Linux OS steps after resizing a disk in Azure
-- Confusing control-plane Contributor with a data-plane storage role
+- Confusing the control-plane Lab Student role with a data-plane storage role
 - Not waiting for metrics/logs to appear in LAW (allow 5-10 minutes for ingestion)
 - Overlooking that VNet flow logs and StorageBlobLogs are in the same LAW as VM telemetry
 

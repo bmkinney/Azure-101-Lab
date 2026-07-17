@@ -34,7 +34,7 @@
 
 ### 2:10–2:40 — Module 5: Cost & Policy Compliance
 - identify non-compliant resources via Azure Policy
-- apply required Department and Environment tags
+- create remediation tasks so the Modify tag policies apply Department and Environment tags
 - generate ACM cost report by tag at subscription scope
 - review budget configuration and alert thresholds
 

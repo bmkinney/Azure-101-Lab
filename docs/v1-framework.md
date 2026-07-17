@@ -43,8 +43,8 @@ The lab will assume:
 
 Recommended minimum participant access:
 
-- `Contributor` on their own resource group
-- `Reader` at subscription scope if broader visibility is needed for policy or cost views
+- a custom subscription-scoped role (Contributor-equivalent minus storage account keys and role-assignment writes) — see the `Azure 101 Lab Student` role used by this lab
+- the only role-assignment write granted is an ABAC-scoped Storage Blob Data grant on the lab storage account (Module 6)
 
 ## 4. Design principles for v1
 
@@ -272,8 +272,8 @@ Keep access minimal and intentional.
 ### Recommended participant permissions
 At minimum, grant only what is needed to complete the exercise.
 Examples:
-- `Contributor` on the participant resource group
-- `Reader` at subscription scope if needed for policy, activity log, or cost review
+- a custom subscription-scoped role tailored to the exercises (e.g. Contributor-equivalent minus storage account keys and role-assignment writes)
+- a tightly scoped, ABAC-restricted role-assignment grant where self-elevation is part of the exercise (e.g. Storage Blob Data on a single storage account)
 
 Avoid broad subscription `Owner` unless absolutely necessary.
 Use RBAC scope boundaries as part of the learning experience.

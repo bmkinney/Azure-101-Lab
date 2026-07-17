@@ -78,7 +78,7 @@ Use the same flow in every module:
 ### Module 5 — Cost & Policy
 - **Start with:** Azure Policy → Compliance
 - **Then:** Check resource tags, Cost Management → Cost analysis
-- **Fix with:** Apply `Department` and `Environment` tags
+- **Fix with:** Create a remediation task for each tag policy (Modify effect) so the policy identity applies `Department` and `Environment` tags
 
 ### Module 6 — RBAC Data Plane
 - **Start with:** Try uploading a blob to `lab-data` container → 403 error
